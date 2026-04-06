@@ -5,15 +5,16 @@ import { getSessionUser } from "@/server/auth";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
-export async function updateProfile(data: { name?: string, email?: string, logoUrl?: string }) {
+export async function updateProfile(data: { name?: string, email?: string, logoUrl?: string | null, avatarUrl?: string | null }) {
   const user = await getSessionUser();
   if (!user) throw new Error("Não autorizado");
 
   const updateData: any = {};
-  if (data.name) updateData.name = data.name;
-  if (data.email) updateData.email = data.email;
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.email !== undefined) updateData.email = data.email;
+  if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
 
-  if (updateData.name || updateData.email) {
+  if (Object.keys(updateData).length > 0) {
     await prisma.user.update({
       where: { id: user.id },
       data: updateData

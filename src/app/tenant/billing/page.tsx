@@ -2,6 +2,8 @@ import { getSessionUser } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { PlanCards } from "./PlanCards";
+import { BillingFooter } from "./BillingFooter";
 
 export default async function TenantBillingPage() {
   const user = await getSessionUser();
@@ -68,111 +70,18 @@ export default async function TenantBillingPage() {
         </div>
       )}
 
-      {/* Subscription Cards Section */}
-      <div className="grid md:grid-cols-3 gap-6 relative">
-        
-        {/* Card 1: Teste Grátis */}
-        <div className={`relative rounded-[2.5rem] p-8 border transition-all duration-300 flex flex-col ${tenant.licencaTipo === 'TESTE_GRATIS' ? 'bg-white dark:bg-zinc-900 border-blue-500/50 shadow-2xl shadow-blue-500/10 translate-y-[-8px]' : 'bg-white/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 opacity-80'}`}>
-          {tenant.licencaTipo === 'TESTE_GRATIS' && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">Plano Atual</div>
-          )}
-          <div className="mb-6 space-y-1">
-            <h3 className="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Teste Grátis</h3>
-            <p className="text-xs text-zinc-500 font-medium">Experimente a plataforma</p>
-          </div>
-          <div className="mb-8 items-baseline gap-1 hidden">
-             <span className="text-4xl font-black">R$ 0</span>
-             <span className="text-sm text-zinc-500">/mês</span>
-          </div>
-          <ul className="space-y-4 mb-10 flex-1">
-            <li className="flex items-center gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-               <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-500">✓</div>
-               Até 3 serviços ativos
-            </li>
-            <li className="flex items-center gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-               <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-500">✓</div>
-               30 dias de trial
-            </li>
-            <li className="flex items-center gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400 opacity-50">
-               <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 text-zinc-500">×</div>
-               Profissionais ilimitados
-            </li>
-          </ul>
-          <button disabled className="w-full py-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 font-bold text-xs uppercase tracking-widest disabled:cursor-not-allowed">
-             {tenant.licencaTipo === 'TESTE_GRATIS' ? 'Ativo' : 'Indisponível'}
-          </button>
-        </div>
-
-        {/* Card 2: Mensalista */}
-        <div className={`relative rounded-[2.5rem] p-8 border transition-all duration-300 flex flex-col ${tenant.licencaTipo === 'MENSALISTA' ? 'bg-white dark:bg-zinc-900 border-blue-500/50 shadow-2xl shadow-blue-500/10 translate-y-[-8px]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/5 hover:border-blue-500/30'}`}>
-          {tenant.licencaTipo === 'MENSALISTA' && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">Plano Atual</div>
-          )}
-          <div className="mb-6 space-y-1">
-            <h3 className="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Plano Mensalista</h3>
-            <p className="text-xs text-zinc-500 font-medium">Assinatura fixa sem surpresas</p>
-          </div>
-          <div className="mb-8 flex items-baseline gap-1">
-             <span className="text-4xl font-black text-zinc-900 dark:text-white">R$ {Number(config?.defaultMonthlyFee || 99).toFixed(0)}</span>
-             <span className="text-sm text-zinc-500 font-bold">/mês</span>
-          </div>
-          <ul className="space-y-4 mb-10 flex-1">
-            <li className="flex items-center gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-               <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-500">✓</div>
-               Serviços ilimitados
-            </li>
-            <li className="flex items-center gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-               <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-500">✓</div>
-               Profissionais ilimitados
-            </li>
-            <li className="flex items-center gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-               <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-500">✓</div>
-               Suporte prioritário
-            </li>
-          </ul>
-          <button className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${tenant.licencaTipo === 'MENSALISTA' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 disabled:cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-xl shadow-blue-600/20'}`}>
-             {tenant.licencaTipo === 'MENSALISTA' ? 'Plano Atual' : 'Migrar Plano'}
-          </button>
-        </div>
-
-        {/* Card 3: Por Uso */}
-        <div className={`relative rounded-[2.5rem] p-8 border transition-all duration-300 flex flex-col ${tenant.licencaTipo === 'TAXA_POR_SERVICO' ? 'bg-white dark:bg-zinc-900 border-blue-500/50 shadow-2xl shadow-blue-500/10 translate-y-[-8px]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/5 hover:border-blue-500/30'}`}>
-          {tenant.licencaTipo === 'TAXA_POR_SERVICO' && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">Plano Atual</div>
-          )}
-          <div className="mb-6 space-y-1">
-            <h3 className="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Plano por Uso</h3>
-            <p className="text-xs text-zinc-500 font-medium">Pague apenas o que realizar</p>
-          </div>
-          <div className="mb-8 flex items-baseline gap-1">
-             <span className="text-4xl font-black text-zinc-900 dark:text-white">{Number(tenant.taxaServicoPct || config?.defaultTaxPct).toFixed(1)}%</span>
-             <span className="text-sm text-zinc-500 font-bold">/serviço</span>
-          </div>
-          <ul className="space-y-4 mb-10 flex-1">
-            <li className="flex items-center gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-               <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-500">✓</div>
-               Sem mensalidade fixa
-            </li>
-            <li className="flex items-center gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-               <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-500">✓</div>
-               Cobrança pós-venda (DONE)
-            </li>
-            <li className="flex items-center gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-               <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-500">✓</div>
-               Faturamento ilimitado
-            </li>
-          </ul>
-          <button className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${tenant.licencaTipo === 'TAXA_POR_SERVICO' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 disabled:cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-xl shadow-blue-600/20'}`}>
-             {tenant.licencaTipo === 'TAXA_POR_SERVICO' ? 'Plano Atual' : 'Migrar Plano'}
-          </button>
-        </div>
-
-      </div>
+      {/* Plan Cards */}
+      <PlanCards 
+        currentPlan={tenant.licencaTipo}
+        defaultMonthlyFee={Number(config?.defaultMonthlyFee || 99)}
+        defaultTaxPct={Number(config?.defaultTaxPct || 1.5)}
+        tenantTaxPct={tenant.taxaServicoPct ? Number(tenant.taxaServicoPct) : null}
+      />
 
       {/* Transaction History Section */}
       <div className="rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 overflow-hidden">
         <div className="p-8 border-b border-zinc-100 dark:border-white/5 flex items-center justify-between">
-           <h2 className="text-lg font-black text-zinc-900 dark:text-white tracking-tight uppercase tracking-widest text-xs">Histórico de Cobranças</h2>
+           <h2 className="text-lg font-black text-zinc-900 dark:text-white tracking-tight uppercase tracking-widest text-xs">Histórico de Planos</h2>
            <Link href="/tenant/reports" className="text-xs font-bold text-blue-500 hover:text-blue-400 transition-colors">Ver relatórios completos →</Link>
         </div>
         <div className="overflow-x-auto">
@@ -180,7 +89,7 @@ export default async function TenantBillingPage() {
             <thead>
               <tr className="text-left text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 bg-zinc-50 dark:bg-white/2">
                 <th className="py-5 px-8">Data</th>
-                <th className="py-5 px-8">Descrição da Taxa</th>
+                <th className="py-5 px-8">Descrição do Plano</th>
                 <th className="py-5 px-8 text-right">Impacto no Saldo</th>
               </tr>
             </thead>
@@ -202,18 +111,12 @@ export default async function TenantBillingPage() {
       </div>
 
       {/* Support Branding Footer */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-10 border-t border-zinc-100 dark:border-white/5 text-center md:text-left">
-         <div className="space-y-1">
-            <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Suporte BladeHub</p>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">
-               Dúvidas sobre pagamentos? <a href={`mailto:${config?.contactEmail || "suporte@bladehub.app"}`} className="text-blue-500 font-bold hover:underline">{config?.contactEmail || "suporte@bladehub.app"}</a>
-            </p>
-         </div>
-         <div className="flex items-center gap-4">
-            <button className="px-6 py-3 rounded-xl border border-zinc-200 dark:border-white/10 text-xs font-black uppercase tracking-widest hover:bg-zinc-50 dark:hover:bg-white/5 transition-all">Saber mais</button>
-            <button className="px-6 py-3 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all">Falar com um consultor</button>
-         </div>
-      </div>
+      <BillingFooter
+        contactEmail={config?.contactEmail || "pedro.phfg11@gmail.com"}
+        tenantPlan={tenant.licencaTipo || "TESTE_GRATIS"}
+        defaultMonthlyFee={Number(config?.defaultMonthlyFee || 99)}
+        defaultTaxPct={Number(config?.defaultTaxPct || 3)}
+      />
     </div>
   );
 }

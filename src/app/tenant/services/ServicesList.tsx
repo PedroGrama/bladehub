@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import { addService, updateService, deleteService } from "./actions";
+import { useToast } from "@/components/ToastProvider";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 export function ServicesList({ tenantId, initialServices }: { tenantId: string, initialServices: any[] }) {
+  const { toast } = useToast();
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState<number>(0);
@@ -24,7 +28,7 @@ export function ServicesList({ tenantId, initialServices }: { tenantId: string, 
       setNewPrice("");
       setNewDuration(30);
     } catch (err: any) {
-      alert(err.message);
+      toast(err.message, "error");
     }
     setLoading(false);
   }
@@ -35,18 +39,25 @@ export function ServicesList({ tenantId, initialServices }: { tenantId: string, 
       await updateService(id, editPrice, editDuration);
       setEditingId(null);
     } catch (err: any) {
-      alert(err.message);
+      toast(err.message, "error");
     }
     setLoading(false);
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Deseja remover o serviço "${name}"?`)) return;
+    const confirmed = await confirm({
+      title: "Remover Serviço",
+      message: `Deseja remover o serviço "${name}"?`,
+      confirmText: "Remover",
+      isDangerous: true,
+    });
+    if (!confirmed) return;
     setLoading(true);
     try {
       await deleteService(id);
+      toast("Serviço removido com sucesso", "success");
     } catch (err: any) {
-      alert(err.message);
+      toast(err.message, "error");
     }
     setLoading(false);
   }

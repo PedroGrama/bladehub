@@ -1,22 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { getSessionUser } from "@/server/auth";
+import { ERROR_MESSAGES } from "@/lib/errorMessages";
 
 // PATCH /api/admin/license
 // Body: { tenantId, licencaTipo, mensalidadeValor, taxaServicoPct, extendDays, action }
 export async function PATCH(req: Request) {
   const user = await getSessionUser();
   if (!user || user.role !== "admin_geral") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: ERROR_MESSAGES.AUTH.UNAUTHORIZED }, { status: 401 });
   }
 
   const body = await req.json().catch(() => ({}));
   const { tenantId, action } = body;
 
-  if (!tenantId) return NextResponse.json({ error: "tenantId required" }, { status: 400 });
+  if (!tenantId) return NextResponse.json({ error: ERROR_MESSAGES.VALIDATION.TENANT_ID_REQUIRED }, { status: 400 });
 
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
-  if (!tenant) return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+  if (!tenant) return NextResponse.json({ error: ERROR_MESSAGES.VALIDATION.TENANT_NOT_FOUND }, { status: 404 });
 
   if (action === "suspend") {
     await prisma.tenant.update({ where: { id: tenantId }, data: { status: "SUSPENSO" } });
@@ -71,5 +72,5 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ ok: true, message: "Licença atualizada." });
   }
 
-  return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+  return NextResponse.json({ error: ERROR_MESSAGES.VALIDATION.INVALID_ACTION }, { status: 400 });
 }

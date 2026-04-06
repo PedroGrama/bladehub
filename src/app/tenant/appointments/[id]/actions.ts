@@ -90,7 +90,7 @@ export async function repassAppointment(appointmentId: string) {
   if (!user || !user.tenantId) throw new Error("Acesso negado");
 
   const appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
-  if (!appt || appt.tenantId !== user.tenantId) throw new Error("Not found");
+  if (!appt || appt.tenantId !== user.tenantId) throw new Error("Não encontrado");
 
   const otherBarbers = await prisma.user.findMany({
     where: { tenantId: user.tenantId, isBarber: true, isActive: true, id: { not: appt.barberId } }
@@ -135,4 +135,17 @@ export async function repassAppointment(appointmentId: string) {
     revalidatePath(`/tenant/appointments/${appointmentId}`);
     return { repassed: false };
   }
+}
+
+export async function updateAppointmentBarber(id: string, barberId: string) {
+  const user = await getSessionUser();
+  if (!user || !user.tenantId) throw new Error("Acesso negado");
+
+  await prisma.appointment.update({
+    where: { id, tenantId: user.tenantId },
+    data: { barberId }
+  });
+  
+  revalidatePath(`/tenant`);
+  revalidatePath(`/tenant/appointments/${id}`);
 }

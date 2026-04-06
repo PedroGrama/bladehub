@@ -5,17 +5,32 @@ import { redirect } from "next/navigation";
 import { Calendar, Plus, CreditCard, ChevronRight, User, Clock as ClockIcon, TrendingUp } from "lucide-react";
 import { DatePicker } from "./DatePicker";
 
-export default async function TenantHome({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
-  const { date } = await searchParams;
+export default async function TenantHome({ searchParams }: { searchParams: Promise<{ date?: string; period?: string }> }) {
+  const { date, period } = await searchParams;
   const user = await getSessionUser();
   if (!user || !user.tenantId) redirect("/login");
 
-  const targetDate = date ? new Date(date + "T12:00:00") : new Date();
-  
-  const start = new Date(targetDate);
+  const now = new Date();
+  const selectedDate = date ? new Date(date + "T12:00:00") : now;
+
+  const start = new Date(selectedDate);
   start.setHours(0, 0, 0, 0);
-  const end = new Date(targetDate);
+  let end = new Date(selectedDate);
   end.setHours(23, 59, 59, 999);
+
+  if (period === "7days") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    start.setTime(today.getTime());
+    end = new Date(today.getTime() + 6 * 24 * 60 * 60 * 1000);
+    end.setHours(23, 59, 59, 999);
+  } else if (period === "month") {
+    const firstDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    const lastDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+    start.setTime(firstDay.getTime());
+    end = new Date(lastDay);
+    end.setHours(23, 59, 59, 999);
+  }
 
   const isAdmin = user.role === "tenant_admin" || user.role === "admin_geral";
 
@@ -30,7 +45,7 @@ export default async function TenantHome({ searchParams }: { searchParams: Promi
     take: 50,
   });
 
-  const dateStr = targetDate.toISOString().split('T')[0];
+  const dateStr = selectedDate.toISOString().split('T')[0];
 
   return (
     <main className="p-8 max-w-6xl mx-auto font-sans min-h-screen">
@@ -45,14 +60,28 @@ export default async function TenantHome({ searchParams }: { searchParams: Promi
             <p className="text-sm text-zinc-500 font-medium">Visualize e controle seus compromissos para hoje.</p>
           </div>
           
-          <div className="flex items-center gap-3">
-            <DatePicker initialDate={dateStr} />
-            <Link
-              href={`/tenant/appointments/new?date=${dateStr}`}
-              className="flex items-center gap-2 h-11 px-6 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-xs hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-black/10"
-            >
-              <Plus className="w-4 h-4" /> Novo Agendamento
-            </Link>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <DatePicker initialDate={dateStr} />
+              <Link
+                href={`/tenant/appointments/new?date=${dateStr}`}
+                className="flex items-center gap-2 h-11 px-6 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-xs hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-black/10"
+              >
+                <Plus className="w-4 h-4" /> Novo Agendamento
+              </Link>
+            </div>
+
+            <div className="flex flex-wrap gap-2 text-xs">
+              <Link href="/tenant?date=" className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-white font-bold hover:bg-white/20">
+                Hoje
+              </Link>
+              <Link href="/tenant?period=7days" className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-white font-bold hover:bg-white/20">
+                Próximos 7 dias
+              </Link>
+              <Link href="/tenant?period=month" className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-white font-bold hover:bg-white/20">
+                Este mês
+              </Link>
+            </div>
           </div>
         </header>
 

@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/server/db";
 import { getSessionUser } from "@/server/auth";
+import { ERROR_MESSAGES } from "@/lib/errorMessages";
 
 export async function GET() {
   const user = await getSessionUser();
   if (!user || user.role !== "admin_geral") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: ERROR_MESSAGES.AUTH.UNAUTHORIZED }, { status: 401 });
   }
 
   const tenants = await prisma.tenant.findMany({
@@ -20,7 +21,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user || user.role !== "admin_geral") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: ERROR_MESSAGES.AUTH.UNAUTHORIZED }, { status: 401 });
   }
 
   const body = await req.json().catch(() => ({}));
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Este email já está em uso. Utilize outro email para o admin deste estabelecimento." }, { status: 400 });
   }
 
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  const slug = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
   const tenant = await prisma.tenant.create({
     data: { name, slug, isActive: true },
@@ -52,13 +53,14 @@ export async function POST(req: Request) {
 
   const adminUser = await prisma.user.create({
     data: {
-      name: `${name} Admin`,
+      name: name,
       email,
       passwordHash,
       role: "tenant_admin",
       tenantId: tenant.id,
       isActive: true,
       isBarber: true,
+      emailVerifiedAt: new Date(), // Estabelecimentos criados pelo admin não precisam validar email
     },
   });
 
@@ -82,18 +84,8 @@ export async function POST(req: Request) {
 
   const defaultServices = [
     { name: "Corte de cabelo", basePrice: 40, durationMinutes: 30 },
-    { name: "Barba", basePrice: 35, durationMinutes: 30 },
-    { name: "Corte + Barba", basePrice: 70, durationMinutes: 60 },
-    { name: "Pezinho", basePrice: 15, durationMinutes: 15 },
-    { name: "Pigmentação de barba", basePrice: 30, durationMinutes: 30 },
-    { name: "Hidratação capilar", basePrice: 40, durationMinutes: 30 },
-    { name: "Relaxamento/alisamento", basePrice: 80, durationMinutes: 60 },
     { name: "Sobrancelha", basePrice: 20, durationMinutes: 15 },
-    { name: "Limpeza de pele", basePrice: 50, durationMinutes: 30 },
-    { name: "Depilação (cera/laser)", basePrice: 60, durationMinutes: 45 },
-    { name: "Platinado/Descolorido", basePrice: 120, durationMinutes: 120 },
-    { name: "Coloração", basePrice: 80, durationMinutes: 60 },
-    { name: "Progressiva", basePrice: 150, durationMinutes: 90 },
+    { name: "Depilação", basePrice: 60, durationMinutes: 45 },
   ];
 
   await prisma.service.createMany({

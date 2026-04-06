@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Scissors, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,7 @@ export default function ForgotPasswordPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
               <Scissors className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white tracking-tight">StudioFlow</span>
+            <span className="text-2xl font-bold text-white tracking-tight">BladeHub</span>
           </Link>
         </motion.div>
 
@@ -98,12 +100,15 @@ export default function ForgotPasswordPage() {
                 <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
                   Se o email <span className="text-zinc-300 font-bold">{email}</span> estiver cadastrado, você receberá instruções em instantes.
                 </p>
-                <Link
-                  href="/login"
+                <button
+                  onClick={() => {
+                    if (window.history.length > 2) router.back();
+                    else router.push("/login");
+                  }}
                   className="inline-flex items-center gap-2 text-sm font-bold text-blue-500 hover:text-blue-400 transition"
                 >
                   <ArrowLeft className="w-4 h-4" /> Voltar para o Login
-                </Link>
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -116,9 +121,15 @@ export default function ForgotPasswordPage() {
             transition={{ delay: 0.5 }}
             className="text-center mt-8"
           >
-            <Link href="/login" className="text-xs font-bold text-zinc-600 uppercase tracking-widest hover:text-zinc-400 transition flex items-center justify-center gap-2">
+            <button 
+              onClick={() => {
+                if (window.history.length > 2) router.back();
+                else router.push("/login");
+              }}
+              className="text-xs font-bold text-zinc-600 uppercase tracking-widest hover:text-zinc-400 transition flex items-center justify-center gap-2"
+            >
               <ArrowLeft className="w-3 h-3" /> Lembra sua senha? Entrar
-            </Link>
+            </button>
           </motion.div>
         )}
       </div>

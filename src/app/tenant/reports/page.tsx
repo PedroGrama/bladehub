@@ -3,7 +3,8 @@ import { prisma } from "@/server/db";
 import { redirect } from "next/navigation";
 import { ReportsFilter } from "./ReportsFilter";
 
-export default async function ReportsPage({ searchParams }: { searchParams: { start?: string, end?: string, barber?: string } }) {
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ start?: string, end?: string, barber?: string }> }) {
+  const params = await searchParams;
   const user = await getSessionUser();
   if (!user || (!user.tenantId && user.role !== "admin_geral")) redirect("/login");
   if (!user.tenantId) return <div className="p-6">Selecione uma barbearia.</div>;
@@ -12,11 +13,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: { st
 
   // Calculate Dates
   const today = new Date();
-  const startParam = searchParams.start ? new Date(searchParams.start) : new Date(today.getFullYear(), today.getMonth(), 1);
-  const endParam = searchParams.end ? new Date(searchParams.end) : new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+  const startParam = params.start ? new Date(params.start) : new Date(today.getFullYear(), today.getMonth(), 1);
+  const endParam = params.end ? new Date(params.end) : new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
 
   // Barber filter enforced
-  const enforcedBarberId = isAdmin ? (searchParams.barber || undefined) : user.id;
+  const enforcedBarberId = isAdmin ? (params.barber || undefined) : user.id;
 
   const appointments = await prisma.appointment.findMany({
     where: {

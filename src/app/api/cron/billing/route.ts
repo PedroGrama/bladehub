@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/server/db";
+import { ERROR_MESSAGES } from "@/lib/errorMessages";
 
 // GET /api/cron/billing
 // Should be called daily by a CRON service (e.g., Vercel CRON, Railway, or a simple setInterval in a worker).
@@ -9,7 +10,7 @@ export async function GET(req: Request) {
   const secret = searchParams.get("secret");
   
   if (secret !== process.env.CRON_SECRET && process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: ERROR_MESSAGES.AUTH.UNAUTHORIZED }, { status: 401 });
   }
 
   const now = new Date();

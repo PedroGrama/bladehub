@@ -1,8 +1,10 @@
+"use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { requestPasswordReset } from "./actions";
-import { redirect } from "next/navigation";
 
 export default function ForgotPasswordPage({ searchParams }: { searchParams: { success?: string, error?: string } }) {
+  const router = useRouter();
   if (searchParams.success) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-4">
@@ -14,21 +16,28 @@ export default function ForgotPasswordPage({ searchParams }: { searchParams: { s
           <p className="text-xs text-zinc-400 mb-6 italic">
             (Nota do desenvolvedor: Olhe o terminal para ver o link gerado, pois não configuramos envio de e-mails reais no MVP).
           </p>
-          <Link href="/login" className="block w-full rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+          <button 
+            onClick={() => {
+              if (window.history.length > 2) router.back();
+              else router.push("/login");
+            }}
+            className="block w-full rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
             Voltar ao Login
-          </Link>
+          </button>
         </div>
       </div>
     );
   }
 
-  async function action(formData: FormData) {
-    "use server";
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     try {
       await requestPasswordReset(formData);
-      redirect("/login/forgot?success=1");
+      router.push("/login/forgot?success=1");
     } catch (e: any) {
-      redirect(`/login/forgot?error=${encodeURIComponent(e.message)}`);
+      router.push(`/login/forgot?error=${encodeURIComponent(e.message)}`);
     }
   }
 
@@ -43,7 +52,7 @@ export default function ForgotPasswordPage({ searchParams }: { searchParams: { s
           </div>
         )}
 
-        <form action={action} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">E-mail</label>
             <input 
@@ -61,9 +70,15 @@ export default function ForgotPasswordPage({ searchParams }: { searchParams: { s
         </form>
 
         <div className="mt-6 text-center">
-          <Link href="/login" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition">
+          <button 
+            onClick={() => {
+              if (window.history.length > 2) router.back();
+              else router.push("/login");
+            }}
+            className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition"
+          >
             Lembrou da senha? Voltar
-          </Link>
+          </button>
         </div>
       </div>
     </div>

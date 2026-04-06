@@ -48,7 +48,14 @@ export function MyHoursForm({ tenantId, initialHours, userRole, establishmentHou
     e.preventDefault();
     setLoading(true);
     try {
-      await saveMyHours(tenantId, hours);
+      const result = await saveMyHours(tenantId, hours);
+      
+      if ("error" in result) {
+        toast(result.error, "error");
+        setLoading(false);
+        return;
+      }
+
       toast("Seus horários foram salvos com sucesso!", "success");
       router.refresh();
     } catch (e: any) {

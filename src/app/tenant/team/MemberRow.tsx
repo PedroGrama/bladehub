@@ -1,21 +1,27 @@
 "use client";
 
 import React, { useState } from "react";
-import { toggleMemberActive, toggleIsBarber, deleteMember, forceResetPassword, editMember, promoteToAdmin } from "./actions";
+import { toggleMemberActive, toggleIsBarber, deleteMember, forceResetPassword, editMember, promoteToAdmin, updateMemberPixKey, revokeFromAdmin } from "./actions";
 import { 
   MoreVertical, ShieldCheck, Key, Trash2, 
   UserCog, ShieldAlert, CheckCircle2, AlertCircle, 
-  Mail, User, Edit3, X, Save, Calendar
+  Mail, User, Edit3, X, Save, Calendar, QrCode
 } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 export function MemberRow({ member, currentUserRole }: { member: any; currentUserRole: string }) {
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
   const [editName, setEditName] = useState(member.name || "");
   const [editEmail, setEditEmail] = useState(member.email || "");
+  const [editPixKey, setEditPixKey] = useState(member.pixKeysOwned?.[0]?.keyValue || "");
+  const [editPixName, setEditPixName] = useState(member.pixKeysOwned?.[0]?.receiverName || member.name || "");
   const [showMenu, setShowMenu] = useState(false);
   const { toast } = useToast();
+  const confirm = useConfirm();
 
   const isAdmin = currentUserRole === "tenant_admin" || currentUserRole === "admin_geral";
   const canSuspend = isAdmin && member.role !== "tenant_admin" && member.role !== "admin_geral";
@@ -45,26 +51,31 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
   };
 
   const handleDelete = async () => {
-    if (confirm(`Tem certeza que deseja excluir ${member.name}? Esta ação não pode ser desfeita.`)) {
-      setLoading(true);
-      try {
-        await deleteMember(member.id);
-        toast("Membro excluído com sucesso.", "success");
-      } catch(e: any) {
-        toast(e.message, "error");
-        setLoading(false);
-      }
+    const confirmed = await confirm({
+      title: "Excluir Membro",
+      message: `Tem certeza que deseja excluir ${member.name}? Esta ação não pode ser desfeita.`,
+      confirmText: "Excluir",
+      isDangerous: true,
+    });
+    if (!confirmed) return;
+    setLoading(true);
+    try {
+      await deleteMember(member.id);
+      toast("Membro excluído com sucesso.", "success");
+    } catch(e: any) {
+      toast(e.message, "error");
+      setLoading(false);
     }
   };
 
   const handlePasswordReset = async () => {
-    const pass = prompt(`Nova senha para ${member.name} (mínimo 6 caracteres):`);
-    if (!pass) return;
-    if (pass.length < 6) return toast("A senha precisa ter no mínimo 6 caracteres.", "error");
+    if (newPassword.length < 6) return toast("A senha precisa ter no mínimo 6 caracteres.", "error");
     setLoading(true);
     try {
-      await forceResetPassword(member.id, pass);
+      await forceResetPassword(member.id, newPassword);
       toast("Senha alterada com sucesso!", "success");
+      setIsResettingPassword(false);
+      setNewPassword("");
     } catch (e: any) {
       toast("Erro ao alterar senha: " + e.message, "error");
     }
@@ -76,6 +87,9 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
     setLoading(true);
     try {
       await editMember(member.id, editName, editEmail);
+      if (editPixKey) {
+        await updateMemberPixKey(member.id, editPixKey, editPixName);
+      }
       toast("Dados do membro atualizados.", "success");
       setIsEditing(false);
     } catch(e: any) {
@@ -85,11 +99,35 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
   };
 
   const handlePromoteToAdmin = async () => {
-    if (!confirm(`Promover ${member.name} a Admin? Ele terá acesso total ao painel gerenciador.`)) return;
+    const confirmed = await confirm({
+      title: "Promover a Admin",
+      message: `Promover ${member.name} a Admin? Ele terá acesso total ao painel gerenciador.`,
+      confirmText: "Promover",
+      isDangerous: true,
+    });
+    if (!confirmed) return;
     setLoading(true);
     try {
       await promoteToAdmin(member.id);
       toast(`${member.name} agora é um administrador.`, "success");
+    } catch(e: any) {
+      toast(e.message, "error");
+    }
+    setLoading(false);
+  };
+
+  const handleRevokeFromAdmin = async () => {
+    const confirmed = await confirm({
+      title: "Remover Permissão de Admin",
+      message: `Remover permissão de Administrator de ${member.name}? Ele perderá acesso ao painel gerenciador.`,
+      confirmText: "Remover",
+      isDangerous: true,
+    });
+    if (!confirmed) return;
+    setLoading(true);
+    try {
+      await revokeFromAdmin(member.id);
+      toast(`${member.name} não é mais um administrador.`, "success");
     } catch(e: any) {
       toast(e.message, "error");
     }
@@ -120,12 +158,64 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
                 type="email" 
               />
             </div>
+            {member.isBarber && (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 relative">
+                  <QrCode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <input 
+                    value={editPixKey} 
+                    onChange={e => setEditPixKey(e.target.value)} 
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-100 dark:border-white/10 dark:bg-black text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-sans" 
+                    placeholder="Chave PIX do profissional" 
+                  />
+                </div>
+                <div className="flex-1 relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <input 
+                    value={editPixName} 
+                    onChange={e => setEditPixName(e.target.value)} 
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-100 dark:border-white/10 dark:bg-black text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-sans" 
+                    placeholder="Nome do titular (PIX)" 
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex sm:flex-col gap-2 justify-end pt-2 sm:pt-0">
             <button disabled={loading} onClick={handleSaveEdit} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold text-xs hover:opacity-90 transition shadow-lg shadow-black/10">
               <Save className="w-3.5 h-3.5" /> Salvar
             </button>
             <button onClick={() => setIsEditing(false)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 rounded-xl font-bold text-xs hover:bg-zinc-200 dark:hover:bg-white/10 transition">
+              <X className="w-3.5 h-3.5" /> Cancelar
+            </button>
+          </div>
+        </div>
+      </li>
+    );
+  }
+
+  if (isResettingPassword) {
+    return (
+      <li className="relative p-6 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-[12px] shadow-sm animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 space-y-3">
+            <h4 className="text-sm font-bold text-zinc-900 dark:text-white">Redefinir senha de {member.name}</h4>
+            <div className="relative">
+              <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <input 
+                type="password"
+                value={newPassword} 
+                onChange={e => setNewPassword(e.target.value)} 
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-100 dark:border-white/10 dark:bg-black text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-sans" 
+                placeholder="Nova senha secreta" 
+              />
+            </div>
+          </div>
+          <div className="flex sm:flex-col gap-2 justify-end pt-2 sm:pt-0">
+            <button disabled={loading || newPassword.length < 6} onClick={handlePasswordReset} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 disabled:opacity-50">
+              <Save className="w-3.5 h-3.5" /> Confirmar
+            </button>
+            <button onClick={() => { setIsResettingPassword(false); setNewPassword(""); }} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 rounded-xl font-bold text-xs hover:bg-zinc-200 dark:hover:bg-white/10 transition">
               <X className="w-3.5 h-3.5" /> Cancelar
             </button>
           </div>
@@ -153,7 +243,12 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
                     Admin
                   </span>
                 )}
-                {member.isBarber && (
+                {isOtherAdmin && member.isBarber && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/10 text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest border border-amber-500/20">
+                    Atendente
+                  </span>
+                )}
+                {member.isBarber && !isOtherAdmin && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest border border-emerald-500/20">
                     Agenda Ativa
                   </span>
@@ -208,7 +303,7 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
                 <button onClick={() => setIsEditing(true)} className="p-3 rounded-2xl text-zinc-400 hover:text-zinc-900 dark:hover:white hover:bg-zinc-100 dark:hover:bg-white/5 transition-all" title="Editar">
                   <Edit3 className="w-5 h-5" />
                 </button>
-                <button onClick={handlePasswordReset} className="p-3 rounded-2xl text-zinc-400 hover:text-zinc-900 dark:hover:white hover:bg-zinc-100 dark:hover:bg-white/5 transition-all" title="Senha">
+                <button onClick={() => setIsResettingPassword(true)} className="p-3 rounded-2xl text-zinc-400 hover:text-zinc-900 dark:hover:white hover:bg-zinc-100 dark:hover:bg-white/5 transition-all" title="Senha">
                   <Key className="w-5 h-5" />
                 </button>
                 {!isOtherAdmin && (
@@ -220,6 +315,11 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </>
+                )}
+                {isOtherAdmin && isAdmin && (
+                  <button onClick={handleRevokeFromAdmin} className="p-3 rounded-2xl text-zinc-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all" title="Remover Admin">
+                    <ShieldAlert className="w-5 h-5" />
+                  </button>
                 )}
               </>
             )}
@@ -250,7 +350,7 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
                   <button onClick={() => { setIsEditing(true); setShowMenu(false); }} className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-white/5 transition-all">
                     <Edit3 className="w-4 h-4" /> Editar Perfil
                   </button>
-                  <button onClick={() => { handlePasswordReset(); setShowMenu(false); }} className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-white/5 transition-all">
+                  <button onClick={() => { setIsResettingPassword(true); setShowMenu(false); }} className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-white/5 transition-all">
                     <Key className="w-4 h-4" /> Alterar Senha
                   </button>
                   <button onClick={() => { handleToggleIsBarber(); setShowMenu(false); }} className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-white/5 transition-all">

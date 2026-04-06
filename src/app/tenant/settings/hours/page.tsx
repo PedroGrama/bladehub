@@ -38,11 +38,13 @@ export default async function TenantHoursPage() {
   });
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-semibold">Horários do Estabelecimento</h1>
-      <p className="text-sm text-zinc-500">Configure o horário geral de funcionamento do estabelecimento.</p>
+    <div className="p-8 space-y-10 max-w-5xl mx-auto font-sans min-h-screen">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">Horários do Estabelecimento</h1>
+        <p className="text-sm text-zinc-500 font-medium leading-relaxed">Configure o horário geral de funcionamento do estabelecimento.</p>
+      </header>
       
-      <div className="bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-2xl p-5">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-[16px] p-8 shadow-sm">
         <HoursForm tenantId={user.tenantId} initialHours={initialHours} />
       </div>
     </div>

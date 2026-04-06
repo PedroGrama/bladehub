@@ -20,7 +20,10 @@ export async function doCheckIn(appointmentId: string) {
 
   await prisma.appointment.update({
     where: { id: appointmentId },
-    data: { clientConfirmedAt: now }
+    data: { 
+      clientConfirmedAt: now,
+      status: "in_progress"
+    }
   });
 
   revalidatePath(`/book/`);

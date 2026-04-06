@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Scissors, CalendarCheck, TrendingUp, ShieldCheck, ChevronRight, CheckCircle2, Zap, Users, Star, ArrowRight, ShieldAlert, Play } from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Scissors, CalendarCheck, TrendingUp, ShieldCheck, ChevronRight, CheckCircle2, Zap, Users, Star, ArrowRight, ShieldAlert, Play, Circle } from "lucide-react";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -18,6 +19,62 @@ const stagger = {
 };
 
 export default function LandingPage() {
+  const slides = [
+    {
+      label: "Barbearia masculina moderna",
+      src: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=1600",
+    },
+    {
+      label: "Salão feminino elegante",
+      src: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1600",
+    },
+    {
+      label: "Barbeiro atendendo cliente",
+      src: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1600",
+    },
+    {
+      label: "Salão de beleza premium",
+      src: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1600",
+    },
+  ];
+
+  const testimonials = [
+    {
+      name: "Ricardo Oliveira",
+      role: "Proprietário - Barbeiros S.A.",
+      content: "O BladeHub mudou a forma como lidamos com os agendamentos. Nossos clientes adoram a simplicidade e nós adoramos o controle financeiro.",
+      avatar: "https://i.pravatar.cc/150?u=ricardo"
+    },
+    {
+      name: "Ana Beatriz",
+      role: "Gestora - Studio Glow",
+      content: "A interface é simplesmente maravilhosa. Dá um ar de profissionalismo que nenhum outro sistema conseguiu entregar até hoje.",
+      avatar: "https://i.pravatar.cc/150?u=ana"
+    },
+    {
+      name: "Marcos Vinicius",
+      role: "Mestre Barbeiro",
+      content: "O check-in online reduziu nossos atrasos em 90%. É uma funcionalidade indispensável para quem quer crescer de verdade.",
+      avatar: "https://i.pravatar.cc/150?u=marcos"
+    }
+  ];
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 4000);
+    const testimonialTimer = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 6000);
+    return () => {
+      clearInterval(timer);
+      clearInterval(testimonialTimer);
+    };
+  }, [slides.length, testimonials.length]);
+
   return (
     <div className="min-h-screen bg-zinc-950 font-sans selection:bg-blue-500/30 overflow-hidden text-zinc-100">
 
@@ -36,12 +93,12 @@ export default function LandingPage() {
             <Link href="/login" className="text-sm font-bold text-zinc-400 hover:text-white transition">
               Entrar
             </Link>
-            <Link href="/login" className="text-sm font-black bg-white text-zinc-950 px-6 py-2.5 rounded-full hover:bg-zinc-200 transition shadow-xl shadow-white/5">
+            <Link href="/signup" className="text-sm font-black bg-white text-zinc-950 px-6 py-2.5 rounded-full hover:bg-zinc-200 transition shadow-xl shadow-white/5">
               Começar Agora
             </Link>
           </nav>
           {/* Mobile CTA */}
-          <Link href="/login" className="md:hidden text-xs font-black bg-blue-600 text-white px-5 py-2.5 rounded-full">
+          <Link href="/signup" className="md:hidden text-xs font-black bg-blue-600 text-white px-5 py-2.5 rounded-full">
             Acessar
           </Link>
         </div>
@@ -107,57 +164,59 @@ export default function LandingPage() {
             </a>
           </motion.div>
 
-          {/* Dashboard Mockup Section (Animated Preview) */}
-          <motion.div
+          {/* Dashboard Carousel Section */}
+          <motion.section
             initial={{ opacity: 0, y: 60 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.45 }}
-            className="mt-24 relative mx-auto max-w-6xl group p-4"
+            className="mt-24 relative mx-auto max-w-6xl p-4"
           >
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/30 to-indigo-600/30 rounded-[32px] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000" />
-            
             <div className="relative rounded-[28px] border border-white/10 bg-zinc-900 overflow-hidden shadow-2xl">
-               <div className="flex h-10 items-center px-5 gap-2 border-b border-white/5 bg-zinc-900/50 backdrop-blur-md relative z-10">
-                 <div className="w-3 h-3 rounded-full bg-red-500/40" />
-                 <div className="w-3 h-3 rounded-full bg-amber-500/40" />
-                 <div className="w-3 h-3 rounded-full bg-green-500/40" />
-                 <div className="ml-4 h-4 w-32 bg-white/5 rounded-full" />
-               </div>
-               
-               {/* Simulated Video UI */}
-               <div className="relative aspect-video flex items-center justify-center overflow-hidden bg-zinc-900">
-                  <motion.div 
-                    animate={{ scale: [1, 1.02, 1], rotate: [0, 0.5, 0] }}
-                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                    className="absolute inset-0 z-0 p-8"
-                  >
-                    <img 
-                      src="/images/dashboard-mockup.png" 
-                      alt="Premium Dashboard Mockup" 
-                      className="w-full h-full object-cover rounded-xl brightness-[0.7] contrast-[1.1] blur-[2px] group-hover:blur-0 transition-all duration-700" 
-                    />
-                  </motion.div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent pointer-events-none z-10" />
-                  
-                  {/* Play Overlay */}
-                  <div className="relative z-20 flex flex-col items-center gap-6">
-                     <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform cursor-pointer">
-                        <Play className="w-8 h-8 text-white fill-white" />
-                     </div>
-                     <div className="flex flex-col items-center">
-                        <span className="text-sm font-black text-white uppercase tracking-[0.3em]">Preview em Vídeo</span>
-                        <div className="w-48 h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
-                           <motion.div 
-                             animate={{ x: ["-100%", "100%"] }}
-                             transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                             className="w-1/2 h-full bg-blue-600 rounded-full" 
-                           />
-                        </div>
-                     </div>
-                  </div>
-               </div>
+              <img
+                src={slides[currentSlide].src}
+                alt={slides[currentSlide].label}
+                className="w-full h-[420px] object-cover brightness-75 transition-all duration-1000"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-transparent to-transparent" />
+              <div className="absolute left-6 bottom-6 z-20 max-w-lg">
+                <p className="text-xs font-bold text-blue-300 uppercase tracking-widest mb-2">Galeria</p>
+                <h3 className="text-3xl md:text-4xl font-black text-white leading-tight">{slides[currentSlide].label}</h3>
+                <p className="mt-2 text-sm text-zinc-200 max-w-md">Veja o BladeHub em ação com visual premium e interface otimizada para seu salão ou barbearia.</p>
+              </div>
+
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
+                {slides.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentSlide(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition ${
+                      idx === currentSlide ? "bg-white" : "bg-white/40 hover:bg-white"
+                    }`}
+                    aria-label={`Slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              <div className="absolute inset-0 flex items-center justify-between px-4">
+                <button
+                  type="button"
+                  onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
+                  className="rounded-full bg-black/40 p-2 backdrop-blur transition hover:bg-black/60"
+                  aria-label="Anterior"
+                >
+                  <ChevronRight className="w-4 h-4 -rotate-180 text-white" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
+                  className="rounded-full bg-black/40 p-2 backdrop-blur transition hover:bg-black/60"
+                  aria-label="Próximo"
+                >
+                  <ChevronRight className="w-4 h-4 text-white" />
+                </button>
+              </div>
             </div>
-          </motion.div>
+          </motion.section>
         </section>
 
         {/* ── STATS ── */}
@@ -252,6 +311,73 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── TESTIMONIALS CAROUSEL ── */}
+        <section className="py-32 bg-zinc-900/30 relative overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6">
+            <motion.div className="text-center mb-20" {...fadeUp}>
+              <h2 className="text-4xl font-black text-white tracking-tighter">O que dizem os experts</h2>
+            </motion.div>
+
+            <div className="relative max-w-4xl mx-auto h-[300px] flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentTestimonial}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="w-full text-center"
+                >
+                  <div className="flex flex-col items-center">
+                    <img 
+                      src={testimonials[currentTestimonial].avatar} 
+                      alt={testimonials[currentTestimonial].name}
+                      className="w-20 h-20 rounded-full border-2 border-blue-500/30 mb-6 object-cover"
+                    />
+                    <div className="flex gap-1 mb-6">
+                      {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 text-yellow-500 fill-yellow-500" />)}
+                    </div>
+                    <blockquote className="text-xl md:text-3xl font-medium text-white italic leading-relaxed mb-8">
+                      "{testimonials[currentTestimonial].content}"
+                    </blockquote>
+                    <cite className="not-italic">
+                      <div className="text-lg font-bold text-white">{testimonials[currentTestimonial].name}</div>
+                      <div className="text-sm font-medium text-zinc-500">{testimonials[currentTestimonial].role}</div>
+                    </cite>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Controls */}
+              <div className="absolute top-1/2 -translate-y-1/2 w-full flex justify-between pointer-events-none">
+                <button 
+                  onClick={() => setCurrentTestimonial(prev => (prev - 1 + testimonials.length) % testimonials.length)}
+                  className="pointer-events-auto p-3 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 transition -translate-x-12 hidden md:block"
+                >
+                  <ChevronRight className="w-5 h-5 -rotate-180" />
+                </button>
+                <button 
+                  onClick={() => setCurrentTestimonial(prev => (prev + 1) % testimonials.length)}
+                  className="pointer-events-auto p-3 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 transition translate-x-12 hidden md:block"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Dots */}
+              <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
+                {testimonials.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentTestimonial(idx)}
+                    className={`w-2 h-2 rounded-full transition ${idx === currentTestimonial ? 'bg-blue-500 w-4' : 'bg-white/20 hover:bg-white/40'}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── CTA ── */}
         <section className="py-40 relative overflow-hidden group">
           <div className="absolute inset-0 z-0">
@@ -277,7 +403,7 @@ export default function LandingPage() {
               <span className="text-white font-bold">Escalabilidade, segurança e design premium.</span>
             </motion.p>
             <motion.div {...fadeUp} className="flex flex-col items-center gap-6">
-              <Link href="/login" className="px-12 py-6 rounded-full bg-white text-zinc-950 text-lg font-black hover:bg-zinc-200 transition-all shadow-[0_0_40px_rgba(255,255,255,0.1)] active:scale-95 flex items-center gap-3">
+              <Link href="/signup" className="px-12 py-6 rounded-full bg-white text-zinc-950 text-lg font-black hover:bg-zinc-200 transition-all shadow-[0_0_40px_rgba(255,255,255,0.1)] active:scale-95 flex items-center gap-3">
                 Começar Teste de 30 Dias
                 <Scissors className="w-5 h-5" />
               </Link>
@@ -315,7 +441,7 @@ export default function LandingPage() {
               <div className="flex flex-col gap-3">
                 <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Suporte</span>
                 <a href="#" className="text-sm font-bold text-zinc-400 hover:text-white transition">Central de Ajuda</a>
-                <a href="mailto:contato@bladehub.app" className="text-sm font-bold text-zinc-400 hover:text-white transition">Contato</a>
+                <a href="mailto:pedro.phfg11@gmail.com" className="text-sm font-bold text-zinc-400 hover:text-white transition">Contato</a>
               </div>
               <div className="flex flex-col gap-3">
                 <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Legal</span>

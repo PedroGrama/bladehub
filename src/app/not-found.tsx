@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Scissors, Home, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-center space-y-8 relative overflow-hidden">
       {/* Background Orbs */}
@@ -33,15 +37,18 @@ export default function NotFound() {
           <Home className="w-4 h-4" /> Início
         </Link>
         <button 
-          onClick={() => window.history.back()}
-          className="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-4 text-sm font-bold text-zinc-300 hover:bg-white/10 transition"
+          onClick={() => {
+            if (window.history.length > 2) router.back();
+            else router.push("/");
+          }}
+          className="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-4 text-sm font-bold text-zinc-500 dark:text-zinc-300 hover:bg-white/10 transition"
         >
           <ArrowLeft className="w-4 h-4" /> Voltar
         </button>
       </div>
 
       <footer className="pt-12">
-        <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-[0.2em]">StudioFlow © 2026</p>
+        <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-[0.2em]">BladeHub © 2026</p>
       </footer>
     </div>
   );

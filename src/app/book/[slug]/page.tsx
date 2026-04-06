@@ -11,7 +11,7 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
     include: {
       services: { where: { isActive: true } },
       users: { where: { isBarber: true, isActive: true, deletedAt: null }, select: { id: true, name: true } },
-      tenantBusinessHours: true,
+      businessHours: true,
       barberBusinessHours: { where: { isClosed: false } }
     }
   });
@@ -22,6 +22,7 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
   const pojoTenant = {
     id: tenant.id,
     name: tenant.name,
+    slug: tenant.slug || "",
     logoUrl: tenant.logoUrl,
     allowChooseBarber: tenant.allowChooseBarber
   };

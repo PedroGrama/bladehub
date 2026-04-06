@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPublicAppointment } from "./actions";
 import { useRouter } from "next/navigation";
+import flatpickr from "flatpickr";
+import "flatpickr/dist/flatpickr.min.css";
+// import for Portuguese locale
+import { Portuguese } from "flatpickr/dist/l10n/pt.js";
 
 type BookingWizardProps = {
-  tenant: { id: string, name: string, logoUrl: string | null, allowChooseBarber: boolean };
+  tenant: { id: string, name: string, slug: string, logoUrl: string | null, allowChooseBarber: boolean };
   services: { id: string, name: string, basePrice: number, durationMinutes: number }[];
   barbers: { id: string, name: string }[];
 };
@@ -24,8 +28,82 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const router = useRouter();
 
-  const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-  const nextWeekStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
+  const dateRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let fpDate: any;
+    let fpTime: any;
+    
+    // Get today's date and current time
+    const now = new Date();
+    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const currentHour = String(now.getHours()).padStart(2, '0');
+    const currentMinute = String(now.getMinutes()).padStart(2, '0');
+    const currentTime = `${currentHour}:${currentMinute}`;
+    
+    if (dateRef.current) {
+      fpDate = flatpickr(dateRef.current, {
+        locale: Portuguese,
+        dateFormat: "d/m/Y",
+        minDate: "today",
+        defaultDate: today,
+        allowInput: true,
+        disableMobile: false,
+        onChange: (selectedDates, dateStr) => {
+          // Converter de DD/MM/YYYY para YYYY-MM-DD para armazenar
+          const parts = dateStr.split('/');
+          if (parts.length === 3) {
+            const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            setDate(formatted);
+            
+            // Update time picker minTime if today is selected
+            if (timeRef.current && fpTime) {
+              if (formatted === today) {
+                // Today: set minTime to current time
+                fpTime.set('minTime', currentTime);
+              } else {
+                // Future date: allow any time
+                fpTime.set('minTime', "00:00");
+              }
+            }
+          }
+        }
+      });
+      // Set initial date value
+      setDate(today);
+    }
+
+    if (timeRef.current) {
+      fpTime = flatpickr(timeRef.current, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        time_24hr: true,
+        defaultDate: currentTime,
+        allowInput: true,
+        disableMobile: false,
+        minTime: currentTime, // Initially set to current time
+        onChange: (selectedDates, dateStr) => setTime(dateStr)
+      });
+      // Set initial time value
+      setTime(currentTime);
+    }
+
+    return () => {
+      fpDate?.destroy();
+      fpTime?.destroy();
+    };
+  }, []);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val.length > 11) val = val.slice(0, 11);
+    if (val.length === 11) val = val.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    else if (val.length >= 10) val = val.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    else if (val.length > 2) val = val.replace(/(\d{2})(\d+)/, '($1) $2');
+    setClientPhone(val);
+  };
 
   const toggleService = (id: string) => {
     const newSet = new Set(selectedServices);
@@ -41,9 +119,17 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
   const handleNextStep1 = (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !time || !clientName || !clientPhone) {
-      setError("Preencha todos os campos obrigatórios.");
+      setError("Preencha todos os campos obrigatórios corretamente.");
       return;
     }
+    
+    // Validar telefone - deve ter 10 ou 11 dígitos
+    const phoneDigits = clientPhone.replace(/\D/g, '');
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+      setError("Telefone inválido. Use um telefone com DDD (ex: 11 99999-9999)");
+      return;
+    }
+    
     setError("");
     setStep(2);
   };
@@ -57,7 +143,7 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
     setLoading(true);
 
     try {
-      const apptId = await createPublicAppointment({
+      const result = await createPublicAppointment({
         tenantId: tenant.id,
         clientName,
         clientPhone,
@@ -66,15 +152,24 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
         barberId: barberId || null,
         serviceIds: Array.from(selectedServices)
       });
-      router.push(`/book/${tenant.slug}/${apptId}`);
+
+      if ("error" in result) {
+        const message = result.error || "Erro desconhecido";
+        setError(message);
+        return;
+      }
+
+      router.push(`/book/${tenant.slug}/${result.appointmentId}`);
     } catch (err: any) {
-      setError(err.message);
+      console.error(err);
+      setError("Erro ao criar agendamento. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
   if (step === 3) {
+    const displayDate = date.split('-').reverse().join('/');
     return (
       <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
@@ -82,7 +177,7 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
         </div>
         <h2 className="text-2xl font-bold mb-2">Reserva Confirmada!</h2>
         <p className="text-zinc-500 mb-6">
-          Te aguardamos no dia {date.split('-').reverse().join('/')} às {time}.
+          Te aguardamos no dia {displayDate} às {time}.
         </p>
         <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200 p-4 rounded-2xl text-sm text-left">
           <strong>Aviso Importante:</strong> Você precisa fazer o check-in online na plataforma acessando o atalho que receberá, restrito entre 30 a 10 minutos antes do início do seu horário. Caso contrário o horário poderá ser repassado a um encaixe presencial.
@@ -99,30 +194,20 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
       <div className="flex transition-transform duration-500 ease-in-out w-[200%]" style={{ transform: `translateX(${step === 1 ? '0%' : '-50%'})` }}>
         
         {/* Step 1: Info e Hora */}
-        <div className="w-1/2 flex-shrink-0 pe-4">
-          <form onSubmit={handleNextStep1} className="space-y-4">
+        <div className="w-1/2 flex-shrink-0 pe-4 flex flex-col min-h-[400px]">
+          <form onSubmit={handleNextStep1} className="space-y-4 flex-1">
             <div>
               <label className="block text-sm font-medium mb-1">Seu Nome</label>
               <input required value={clientName} onChange={e => setClientName(e.target.value)} placeholder="João Silva" className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Seu Telefone/WhatsApp</label>
-              <input required value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="(11) 99999-9999" className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Data</label>
-                <input required type="date" min={todayStr} max={nextWeekStr} value={date} onChange={e => setDate(e.target.value)} className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Horário</label>
-                <input required type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
-              </div>
+              <input required value={clientPhone} onChange={handlePhoneChange} placeholder="(11) 99999-9999" className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
             </div>
             
             {tenant.allowChooseBarber && (
               <div>
-                <label className="block text-sm font-medium mb-1">Barbeiro de Preferência</label>
+                <label className="block text-sm font-medium mb-1">Profissional de Preferência</label>
                 <select value={barberId} onChange={e => setBarberId(e.target.value)} className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800 bg-transparent">
                   <option value="">Qualquer um disponível</option>
                   {barbers.map(b => (
@@ -132,6 +217,29 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
               </div>
             )}
             
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Data</label>
+                <input 
+                  type="text"
+                  ref={dateRef}
+                  required
+                  placeholder="Selecione..."
+                  className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800 bg-white dark:bg-zinc-950"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Horário</label>
+                <input 
+                  type="text"
+                  ref={timeRef}
+                  required
+                  placeholder="HH:MM"
+                  className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800 bg-white dark:bg-zinc-950" 
+                />
+              </div>
+            </div>
+            
             <button type="submit" className="w-full mt-4 rounded-xl bg-zinc-900 px-4 py-3 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
               Avançar para Serviços →
             </button>
@@ -139,7 +247,7 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
         </div>
 
         {/* Step 2: Serviços */}
-        <div className="w-1/2 flex-shrink-0 ps-4 space-y-4">
+        <div className="w-1/2 flex-shrink-0 ps-4 space-y-4 flex flex-col min-h-[400px]">
            <div>
              <h3 className="font-semibold mb-2">Quais serviços deseja realizar?</h3>
              <div className="space-y-2 h-[250px] overflow-y-auto pr-2">

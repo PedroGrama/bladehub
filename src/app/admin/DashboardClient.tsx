@@ -72,7 +72,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
       >
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-bold text-white tracking-tight">Painel de Gestão</h2>
+            <h2 className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">Painel de Gestão</h2>
             {IS_DEV && (
               <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
                 Modo Simulação
@@ -85,11 +85,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="rounded-xl border border-white/5 bg-white/5 backdrop-blur-md px-4 py-2.5 text-sm text-zinc-300 outline-none focus:ring-2 focus:ring-blue-500/20 transition cursor-pointer"
+          className="rounded-xl border border-zinc-200 dark:border-white/5 bg-white dark:bg-white/5 backdrop-blur-md px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-blue-500/20 transition cursor-pointer"
         >
-          <option value="all" className="bg-zinc-900">Todos os Estabelecimentos</option>
-          <option value="active" className="bg-zinc-900">Apenas Ativos</option>
-          <option value="inactive" className="bg-zinc-900">Suspensos / Inativos</option>
+          <option value="all" className="bg-white dark:bg-zinc-900">Todos os Estabelecimentos</option>
+          <option value="active" className="bg-white dark:bg-zinc-900">Apenas Ativos</option>
+          <option value="inactive" className="bg-white dark:bg-zinc-900">Suspensos / Inativos</option>
         </select>
       </motion.div>
 
@@ -139,11 +139,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
       {/* Charts Section */}
       <div className="grid gap-6 md:grid-cols-7 lg:grid-cols-12">
         <motion.div 
-          className="md:col-span-12 lg:col-span-8 rounded-3xl border border-white/5 bg-white/3 backdrop-blur-xl p-8 shadow-2xl"
+          className="md:col-span-12 lg:col-span-8 rounded-3xl border border-zinc-200 dark:border-white/5 bg-white dark:bg-white/3 backdrop-blur-xl p-8 shadow-xl dark:shadow-2xl"
           {...fadeUp}
         >
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-bold text-white">Crescimento da Plataforma</h3>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Crescimento da Plataforma</h3>
             <div className="flex items-center gap-4 text-xs font-medium text-zinc-500">
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> Receita</span>
             </div>
@@ -182,8 +182,8 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
           className="md:col-span-12 lg:col-span-4 space-y-6"
           {...fadeUp}
         >
-          <div className="rounded-3xl border border-white/5 bg-white/3 backdrop-blur-xl p-6 shadow-2xl">
-            <h3 className="mb-6 text-sm font-bold text-zinc-400 uppercase tracking-widest">Modelos de Uso</h3>
+          <div className="rounded-3xl border border-zinc-200 dark:border-white/5 bg-white dark:bg-white/3 backdrop-blur-xl p-6 shadow-xl dark:shadow-2xl">
+            <h3 className="mb-6 text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Modelos de Uso</h3>
             <div className="h-[180px] flex items-center justify-around">
               <ResponsiveContainer width="50%" height="100%">
                 <PieChart>
@@ -199,7 +199,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                 {payments.map((item) => (
                   <div key={item.name} className="flex items-center gap-3 text-sm">
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="font-medium text-zinc-300">{item.name}</span>
+                    <span className="font-medium text-zinc-700 dark:text-zinc-300">{item.name}</span>
                     <span className="text-zinc-500 text-xs ml-auto">{item.value}%</span>
                   </div>
                 ))}
@@ -207,25 +207,25 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/5 bg-white/3 backdrop-blur-xl p-6 shadow-2xl">
+          <div className="rounded-3xl border border-zinc-200 dark:border-white/5 bg-white dark:bg-white/3 backdrop-blur-xl p-6 shadow-xl dark:shadow-2xl">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">Rank de Profissionais</h3>
+              <h3 className="text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Rank de Profissionais</h3>
               <Users className="w-4 h-4 text-zinc-500" />
             </div>
             <div className="space-y-5">
               {barbers.map((b, i) => (
                 <div key={b.name} className="flex items-center justify-between group">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center font-bold text-[10px] text-zinc-500 group-hover:bg-blue-600/20 group-hover:text-blue-400 transition-colors">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-50 dark:bg-white/5 flex items-center justify-center font-bold text-[10px] text-zinc-500 group-hover:bg-blue-500/10 dark:group-hover:bg-blue-600/20 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {i + 1}
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-zinc-200 group-hover:text-white transition-colors">{b.name}</div>
+                      <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 group-hover:text-zinc-950 dark:group-hover:text-white transition-colors">{b.name}</div>
                       <div className="text-[10px] text-zinc-500">{b.cortes} atendimentos</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-bold text-zinc-100 group-hover:text-blue-400 transition-colors">R$ {(b.receita / 1000).toFixed(1)}k</div>
+                    <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">R$ {(b.receita / 1000).toFixed(1)}k</div>
                   </div>
                 </div>
               ))}
@@ -252,7 +252,7 @@ function KPICard({ title, value, icon: Icon, color, trend, warning }: any) {
         initial: { opacity: 0, y: 15 },
         animate: { opacity: 1, y: 0 }
       }}
-      className="rounded-3xl border border-white/5 bg-white/3 backdrop-blur-xl p-6 shadow-2xl group hover:bg-white/5 transition-colors cursor-default"
+      className="rounded-3xl border border-zinc-200 dark:border-white/5 bg-white dark:bg-white/3 backdrop-blur-xl p-6 shadow-xl dark:shadow-2xl group hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors cursor-default"
     >
       <div className="flex items-center justify-between mb-4">
         <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
@@ -267,7 +267,7 @@ function KPICard({ title, value, icon: Icon, color, trend, warning }: any) {
       <div className="space-y-1">
         <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">{title}</p>
         <div className="flex items-center gap-2">
-          <h3 className="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">{value}</h3>
+          <h3 className="text-2xl font-bold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{value}</h3>
           {warning && (
             <span className="animate-pulse w-2 h-2 rounded-full bg-red-500" />
           )}

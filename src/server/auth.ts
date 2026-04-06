@@ -64,6 +64,15 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     const { payload } = await jwtVerify(token, secretKey());
     const user = (payload as any)?.user as SessionUser | undefined;
     if (!user?.id || !user?.role) return null;
+
+    // Se admin_geral, checar se há impersonação ativa
+    if (user.role === "admin_geral") {
+      const impId = jar.get("impersonated_tenant_id")?.value;
+      if (impId) {
+        return { ...user, tenantId: impId };
+      }
+    }
+
     return user;
   } catch {
     return null;

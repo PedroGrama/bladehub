@@ -82,3 +82,61 @@ export async function promoteToAdmin(memberId: string) {
   });
   revalidatePath("/tenant/team");
 }
+
+export async function revokeFromAdmin(memberId: string) {
+  const admin = await verifyAdminAccess();
+  if (admin.role !== "tenant_admin" && admin.role !== "admin_geral") throw new Error("Apenas admins podem remover admins.");
+
+  // Don't allow revoking yourself
+  if (admin.id === memberId) throw new Error("Você não pode remover suas próprias permissões de admin.");
+
+  const target = await prisma.user.findUnique({ where: { id: memberId } });
+  if (!target || target.tenantId !== admin.tenantId) throw new Error("Membro não encontrado.");
+  if (target.role !== "tenant_admin") throw new Error("Este membro não é um administrador.");
+
+  // Check if this is the only admin
+  const adminCount = await prisma.user.count({
+    where: { 
+      tenantId: admin.tenantId!,
+      role: "tenant_admin"
+    }
+  });
+
+  if (adminCount <= 1) {
+    throw new Error("Não é possível remover o último administrador do estabelecimento.");
+  }
+
+  await prisma.user.update({
+    where: { id: memberId },
+    data: { role: "barbeiro" }
+  });
+  revalidatePath("/tenant/team");
+}
+
+export async function updateMemberPixKey(memberId: string, keyValue: string, receiverName: string) {
+  const admin = await verifyAdminAccess();
+  
+  const existing = await prisma.pixKey.findFirst({
+    where: { ownerUserId: memberId, tenantId: admin.tenantId! }
+  });
+
+  if (existing) {
+    await prisma.pixKey.update({
+      where: { id: existing.id },
+      data: { keyValue, receiverName, isActive: true }
+    });
+  } else {
+    await prisma.pixKey.create({
+      data: {
+        tenantId: admin.tenantId!,
+        ownerType: "USER",
+        ownerUserId: memberId,
+        keyType: "EVP",
+        keyValue,
+        receiverName,
+        isActive: true
+      }
+    });
+  }
+  revalidatePath("/tenant/team");
+}

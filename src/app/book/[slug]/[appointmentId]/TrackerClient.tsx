@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { doCheckIn } from "./actions";
+import { getStatusLabel, statusColors } from "@/lib/labels";
 
 export function TrackerClient({ appointment, slug }: { appointment: any, slug: string }) {
+  const router = useRouter();
   const [now, setNow] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [checkedIn, setCheckedIn] = useState(appointment.checkedIn);
@@ -50,8 +53,8 @@ export function TrackerClient({ appointment, slug }: { appointment: any, slug: s
         </div>
         <div className="flex justify-between items-center py-2">
           <span className="text-zinc-500">Status</span>
-          <span className="font-semibold uppercase text-xs px-2 py-1 rounded bg-zinc-200 dark:bg-zinc-800">
-            {appointment.status}
+          <span className={`font-semibold uppercase text-xs px-2 py-1 rounded ${statusColors[appointment.status] || "bg-zinc-200 dark:bg-zinc-800"}`}>
+            {getStatusLabel(appointment.status, 'appointment')}
           </span>
         </div>
       </div>
@@ -90,9 +93,15 @@ export function TrackerClient({ appointment, slug }: { appointment: any, slug: s
       )}
 
       <div className="mt-6">
-        <a href={`/book/${slug}`} className="text-sm text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100">
+        <button 
+          onClick={() => {
+            if (window.history.length > 2) router.back();
+            else router.push(`/book/${slug}`);
+          }}
+          className="text-sm text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+        >
           Voltar a página principal
-        </a>
+        </button>
       </div>
     </div>
   );

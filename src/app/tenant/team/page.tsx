@@ -16,6 +16,10 @@ export default async function TeamPage() {
     where: { 
       tenantId: user.tenantId!, 
       role: { in: ["barbeiro", "tenant_admin"] },
+      deletedAt: null
+    },
+    include: {
+      pixKeysOwned: { where: { isActive: true }, take: 1 }
     },
     // Ordenar: admin_tenant primeiro (desc), depois por nome (asc)
     orderBy: [

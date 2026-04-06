@@ -42,7 +42,10 @@ export default function TenantError({
 
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => router.back()}
+              onClick={() => {
+                if (window.history.length > 2) router.back();
+                else router.push("/tenant");
+              }}
               className="h-12 border border-zinc-200 dark:border-white/5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Voltar

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Mail, Lock, ShieldCheck, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Lock, ShieldCheck, Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 
 export function AddBarberForm({ tenantId }: { tenantId: string }) {
@@ -12,6 +12,7 @@ export function AddBarberForm({ tenantId }: { tenantId: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [makeAdmin, setMakeAdmin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -78,12 +79,19 @@ export function AddBarberForm({ tenantId }: { tenantId: string }) {
           <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
           <input 
             required 
-            type="password" 
+            type={showPassword ? "text" : "password"} 
             value={password} 
             onChange={e => setPassword(e.target.value)} 
             placeholder="••••••••"
-            className="w-full h-11 pl-11 pr-4 rounded-xl border border-zinc-100 dark:border-white/10 dark:bg-black text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-medium" 
+            className="w-full h-11 pl-11 pr-10 rounded-xl border border-zinc-100 dark:border-white/10 dark:bg-black text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-medium" 
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-blue-500"
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
         </div>
       </div>
 

@@ -9,26 +9,31 @@ import {
   Palette, Scissors, Settings2, Users, 
   BarChart3, LifeBuoy, LogOut, UserCircle2,
   Menu, X, ChevronRight, LayoutDashboard,
-  ZoomIn, ZoomOut, HelpingHand, Volume2
+  ZoomIn, ZoomOut
 } from "lucide-react";
 
 export function TenantSidebar({ 
   userRole, 
   userEmail, 
   userName,
-  tenantName 
+  tenantName,
+  tenantPlan
 }: { 
   userRole: string; 
   userEmail: string; 
   userName: string;
-  tenantName?: string 
+  tenantName?: string;
+  tenantPlan?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [zoom, setZoom] = useState(100);
   const pathname = usePathname();
 
   const toggle = () => setIsOpen(!isOpen);
-  const isActive = (path: string) => pathname === path || pathname?.startsWith(`${path}/`);
+  const isActive = (path: string) => {
+    if (path === "/tenant") return pathname === "/tenant";
+    return pathname === path || pathname?.startsWith(`${path}/`);
+  };
 
   const handleZoom = (delta: number) => {
     const newZoom = Math.min(Math.max(zoom + delta, 80), 150);
@@ -51,14 +56,14 @@ export function TenantSidebar({
         { href: "/tenant/team", label: "Equipe", icon: Users },
         { href: "/tenant/services", label: "Serviços", icon: Scissors },
         { href: "/tenant/settings/hours", label: "Horário de Funcionamento", icon: Settings2 },
-        { href: "/tenant/reports", label: "Relatórios", icon: BarChart3 },
+        ...(tenantPlan !== "TESTE_GRATIS" ? [{ href: "/tenant/reports", label: "Relatórios", icon: BarChart3 }] : []),
       ]
     }, {
       label: "Configurações",
       items: [
         { href: "/tenant/settings", label: "Personalizar", icon: Palette },
         { href: "/tenant/share", label: "Divulgação", icon: Share2 },
-        { href: "/tenant/billing", label: "Assinatura", icon: CreditCard },
+        { href: "/tenant/billing", label: "Assinatura & Planos", icon: CreditCard },
       ]
     }] : [])
   ];
@@ -137,36 +142,22 @@ export function TenantSidebar({
         {/* Minimalist Sidebar Footer */}
         <div className="mt-auto px-4 pb-6 space-y-6 pt-6 border-t border-zinc-100 dark:border-white/5 bg-white dark:bg-zinc-950">
           
-          {/* Acessibilidade & Tema (Unified Line) */}
+          {/* Zoom & Dark Mode Only */}
           <div className="space-y-4">
-             <span className="px-2 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-600">Sistema</span>
+             <span className="px-2 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-600">Exibição</span>
              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-4">
-                   {/* Zoom Controls (Ghost Style) */}
-                   <div className="flex items-center gap-2">
-                      <button onClick={() => handleZoom(-10)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                         <ZoomOut className="w-4 h-4" />
-                      </button>
-                      <span className="text-[10px] font-black text-zinc-500 w-8 text-center">{zoom}%</span>
-                      <button onClick={() => handleZoom(10)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                         <ZoomIn className="w-4 h-4" />
-                      </button>
-                   </div>
-                   
-                   <div className="h-4 w-px bg-zinc-100 dark:bg-white/5" />
-
-                   {/* Quick Access Icons */}
-                   <div className="flex items-center gap-3">
-                      <button className="text-zinc-400 hover:text-blue-500 transition-colors" title="VLibras">
-                         <HelpingHand className="w-4 h-4" />
-                      </button>
-                      <button className="text-zinc-400 hover:text-blue-500 transition-colors" title="Leitor de Voz">
-                         <Volume2 className="w-4 h-4" />
-                      </button>
-                   </div>
+                <div className="flex items-center gap-2">
+                   {/* Zoom Controls */}
+                   <button onClick={() => handleZoom(-10)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors p-1" title="Diminuir zoom">
+                      <ZoomOut className="w-4 h-4" />
+                   </button>
+                   <span className="text-[10px] font-black text-zinc-500 w-6 text-center">{zoom}%</span>
+                   <button onClick={() => handleZoom(10)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors p-1" title="Aumentar zoom">
+                      <ZoomIn className="w-4 h-4" />
+                   </button>
                 </div>
 
-                {/* Theme Toggle in the same line */}
+                {/* Dark Mode Toggle */}
                 <ThemeToggle />
              </div>
           </div>

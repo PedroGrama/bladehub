@@ -1,8 +1,14 @@
+"use client";
+import { useState } from "react";
 import { resetPassword } from "./actions";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function ResetPasswordPage({ searchParams }: { searchParams: { token?: string, error?: string } }) {
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   if (!searchParams.token) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
@@ -11,13 +17,14 @@ export default function ResetPasswordPage({ searchParams }: { searchParams: { to
     );
   }
 
-  async function action(formData: FormData) {
-    "use server";
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     try {
       await resetPassword(formData);
-      redirect("/login?reset=success");
+      router.push("/login?reset=success");
     } catch (e: any) {
-      redirect(`/login/reset?token=${searchParams.token}&error=${encodeURIComponent(e.message)}`);
+      router.push(`/login/reset?token=${searchParams.token}&error=${encodeURIComponent(e.message)}`);
     }
   }
 
@@ -32,29 +39,47 @@ export default function ResetPasswordPage({ searchParams }: { searchParams: { to
           </div>
         )}
 
-        <form action={action} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input type="hidden" name="token" value={searchParams.token} />
           
-          <div>
+          <div className="space-y-1.5">
             <label className="block text-sm font-medium mb-1">Nova Senha</label>
-            <input 
-              type="password" 
-              name="password" 
-              required 
-              minLength={6}
-              className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800"
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                name="password" 
+                required 
+                minLength={6}
+                className="w-full rounded-xl border px-3 py-2 pr-10 text-sm dark:bg-zinc-950 dark:border-zinc-800"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-blue-500"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
-          <div>
+          <div className="space-y-1.5">
             <label className="block text-sm font-medium mb-1">Confirmar Nova Senha</label>
-            <input 
-              type="password" 
-              name="confirmPassword" 
-              required 
-              minLength={6}
-              className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800"
-            />
+            <div className="relative">
+              <input 
+                type={showConfirmPassword ? "text" : "password"} 
+                name="confirmPassword" 
+                required 
+                minLength={6}
+                className="w-full rounded-xl border px-3 py-2 pr-10 text-sm dark:bg-zinc-950 dark:border-zinc-800"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-blue-500"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           
           <button type="submit" className="w-full rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 transition dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
@@ -63,9 +88,15 @@ export default function ResetPasswordPage({ searchParams }: { searchParams: { to
         </form>
 
         <div className="mt-6 text-center">
-          <Link href="/login" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition">
+          <button 
+            onClick={() => {
+              if (window.history.length > 2) router.back();
+              else router.push("/login");
+            }}
+            className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition"
+          >
             Voltar ao Login
-          </Link>
+          </button>
         </div>
       </div>
     </div>

@@ -17,6 +17,8 @@ export async function updateTenantSettings(formData: FormData) {
   const logoUrl = formData.get("logoUrl") as string;
   const pixKey = formData.get("pixKey") as string;
   const allowChooseBarber = formData.get("allowChooseBarber") === "on";
+  const appDiscountType = formData.get("appDiscountType") as string;
+  const appDiscountValue = Number(formData.get("appDiscountValue") || 0);
 
   if (!name || !slug) throw new Error("Nome e URL são obrigatórios.");
 
@@ -31,7 +33,7 @@ export async function updateTenantSettings(formData: FormData) {
 
   await prisma.tenant.update({
     where: { id: tenantId },
-    data: { name, slug, logoUrl, pixKey, allowChooseBarber }
+    data: { name, slug, logoUrl, pixKey, allowChooseBarber, appDiscountType, appDiscountValue }
   });
 
   revalidatePath("/tenant/settings");

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { getSessionUser } from "@/server/auth";
+import { ERROR_MESSAGES } from "@/lib/errorMessages";
 
 export async function GET() {
   const user = await getSessionUser();
   if (!user || user.role !== "admin_geral") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: ERROR_MESSAGES.AUTH.UNAUTHORIZED }, { status: 401 });
   }
 
   let config = await prisma.systemConfig.findUnique({ where: { id: "global" } });
@@ -19,7 +20,7 @@ export async function GET() {
 export async function PATCH(req: Request) {
   const user = await getSessionUser();
   if (!user || user.role !== "admin_geral") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: ERROR_MESSAGES.AUTH.UNAUTHORIZED }, { status: 401 });
   }
 
   const body = await req.json().catch(() => ({}));

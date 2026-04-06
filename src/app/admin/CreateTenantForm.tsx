@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Plus, Store, Mail, Lock } from "lucide-react";
+import { Plus, Store, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export function CreateTenantForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -45,13 +46,13 @@ export function CreateTenantForm() {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      className="space-y-6 rounded-3xl border border-white/5 bg-white/3 backdrop-blur-xl p-8 shadow-2xl h-full"
+      className="space-y-6 rounded-3xl border border-zinc-200 dark:border-white/5 bg-white/50 dark:bg-white/3 backdrop-blur-xl p-8 shadow-xl h-full"
     >
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+        <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
           <Plus className="w-5 h-5" />
         </div>
-        <h2 className="text-xl font-bold text-white">Novo Estabelecimento</h2>
+        <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Novo Estabelecimento</h2>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-6">
@@ -63,8 +64,8 @@ export function CreateTenantForm() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
-              placeholder="Ex: StudioFlow Premium"
+              className="w-full rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-white/5 px-4 py-3 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all text-ellipsis"
+              placeholder="Ex: BladeHub Premium"
               required
             />
           </div>
@@ -76,7 +77,7 @@ export function CreateTenantForm() {
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+              className="w-full rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-white/5 px-4 py-3 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
               placeholder="admin@exemplo.com"
               type="email"
               required
@@ -87,14 +88,23 @@ export function CreateTenantForm() {
             <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
               <Lock className="w-3 h-3" /> Senha Inicial
             </label>
-            <input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
-              placeholder="********"
-              type="password"
-              required
-            />
+            <div className="relative">
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-white/5 px-4 py-3 pr-10 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                placeholder="********"
+                type={showPassword ? "text" : "password"}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-blue-500"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
         </div>
 

@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { updateAppointmentStatus, finalizeReview, registerPayment, repassAppointment } from "./actions";
+import { updateAppointmentStatus, finalizeReview, registerPayment, repassAppointment, updateAppointmentBarber } from "./actions";
+import { useToast } from "@/components/ToastProvider";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { 
   Scissors, 
   CheckCircle2, 
@@ -17,11 +20,15 @@ import {
   Clock
 } from "lucide-react";
 
-export function AppointmentWorkflow({ appointment, tenantServices, pixKey, currentUserId }: any) {
+export function AppointmentWorkflow({ appointment, tenantServices, pixKey, currentUserId, barbersList = [] }: any) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(appointment?.status || "confirmed");
   const [isReviewing, setIsReviewing] = useState(false);
   const [selectedItems, setSelectedItems] = useState<any[]>(appointment?.items || []);
+  const [selectedBarberId, setSelectedBarberId] = useState(appointment?.barberId);
 
   const toggleItem = (service: any) => {
     if (!service) return;
@@ -55,7 +62,7 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
       setStatus("awaiting_payment");
       setIsReviewing(false);
     } catch(e: any) {
-      alert(e.message);
+      toast(e.message, "error");
     }
     setLoading(false);
   };
@@ -64,27 +71,35 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
     setLoading(true);
     try {
       await registerPayment(appointment.id, method, currentTotal, pixKey?.id);
+      toast("Pagamento registrado com sucesso!", "success");
       setStatus("done");
     } catch(e: any) {
-       alert(e.message);
+       toast(e.message, "error");
     }
     setLoading(false);
   };
 
   const handleRepass = async () => {
-    if (!confirm("Tem certeza que deseja repassar/cancelar este agendamento?")) return;
+    const confirmed = await confirm({
+      title: "Repassar Agendamento",
+      message: "Tem certeza que deseja repassar ou cancelar este agendamento?",
+      confirmText: "Repassar",
+      isDangerous: true,
+    });
+    if (!confirmed) return;
+    
     setLoading(true);
     try {
       const res = await repassAppointment(appointment.id);
       if (res.repassed) {
-        alert("Agendamento repassado para outro profissional disponível!");
-        window.location.href = "/tenant";
+        toast("Agendamento repassado para outro profissional disponível!", "success");
+        router.push("/tenant");
       } else {
-        alert("Nenhum profissional disponível. O agendamento foi cancelado.");
+        toast("Nenhum profissional disponível. O agendamento foi cancelado.", "info");
         setStatus("cancelled");
       }
     } catch(e: any) {
-      alert("Erro: " + e.message);
+      toast("Erro: " + e.message, "error");
     }
     setLoading(false);
   };
@@ -107,9 +122,35 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
               <CheckCircle2 className="w-10 h-10" />
             </div>
             <h2 className="text-3xl font-bold mb-2 text-white">Serviço Concluído!</h2>
-            <p className="text-zinc-500 mb-8">O pagamento de <span className="text-white font-bold">R$ {currentTotal.toFixed(2)}</span> foi registrado com sucesso.</p>
+            <p className="text-zinc-500 mb-6">O pagamento de <span className="text-white font-bold">R$ {currentTotal.toFixed(2)}</span> foi registrado com sucesso.</p>
+            
+            <div className="mb-8 p-4 rounded-2xl bg-zinc-900 border border-white/5 text-left">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">Profissional Responsável</label>
+              <select 
+                value={selectedBarberId}
+                onChange={async (e) => {
+                  const newId = e.target.value;
+                  setSelectedBarberId(newId);
+                  try {
+                    await updateAppointmentBarber(appointment.id, newId);
+                    toast("Profissional atualizado!", "success");
+                  } catch(err: any) {
+                    toast(err.message, "error");
+                  }
+                }}
+                className="w-full bg-transparent text-sm font-bold text-white focus:outline-none"
+              >
+                {barbersList.map((b: any) => (
+                  <option key={b.id} value={b.id} className="bg-zinc-900">{b.name}</option>
+                ))}
+              </select>
+            </div>
+
             <button 
-              onClick={() => window.location.href = "/tenant"}
+              onClick={() => {
+                if (window.history.length > 2) router.back();
+                else router.push("/tenant");
+              }}
               className="w-full rounded-2xl bg-zinc-100 py-4 text-sm font-bold text-zinc-900 hover:bg-white transition"
             >
               Voltar para Agenda
@@ -306,7 +347,15 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
           <motion.div key="cancelled" className={`${cardBase} text-center opacity-50 grayscale`}>
             <div className="text-zinc-500 text-4xl mb-4">✕</div>
             <h2 className="text-xl font-bold">Agendamento Cancelado</h2>
-            <button onClick={() => window.location.href = "/tenant"} className="mt-6 text-sm underline">Voltar</button>
+            <button 
+              onClick={() => {
+                if (window.history.length > 2) router.back();
+                else router.push("/tenant");
+              }} 
+              className="mt-6 text-sm underline"
+            >
+              Voltar
+            </button>
           </motion.div>
         )}
 

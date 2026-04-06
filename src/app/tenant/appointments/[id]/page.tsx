@@ -2,6 +2,8 @@ import { getSessionUser } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { notFound, redirect } from "next/navigation";
 import { AppointmentWorkflow } from "./AppointmentWorkflow";
+import { getStatusLabel } from "@/lib/labels";
+import { BackButton } from "@/components/BackButton";
 
 export default async function AppointmentDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -31,6 +33,11 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
     where: { tenantId: user.tenantId, isActive: true }
   });
 
+  const barbers = await prisma.user.findMany({
+    where: { tenantId: user.tenantId, isBarber: true, isActive: true, deletedAt: null },
+    select: { id: true, name: true }
+  });
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Detalhes do Agendamento</h1>
@@ -57,13 +64,11 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
               </div>
               <div>
                 <span className="block text-zinc-500">Status</span>
-                <span className="font-bold uppercase tracking-wider">{appointment.status}</span>
+                <span className="font-bold uppercase tracking-wider">{getStatusLabel(appointment.status, 'appointment')}</span>
               </div>
             </div>
           </div>
-          <a href="/tenant" className="block text-center w-full rounded-xl bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-700">
-            Voltar para Agenda
-          </a>
+          <BackButton fallback="/tenant" label="Voltar para Agenda" variant="button" className="w-full text-center" />
         </div>
 
         <div className="md:col-span-2">
@@ -73,6 +78,7 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
                tenantServices={services} 
                pixKey={pixKey}
                currentUserId={user.id}
+               barbersList={barbers}
              />
           </div>
         </div>

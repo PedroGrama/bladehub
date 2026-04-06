@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { createWalkinAppointment } from "./actions";
 import { useRouter } from "next/navigation";
+import { validarTelefone, formatarTelefone } from "@/lib/validations";
+import { useToast } from "@/components/ToastProvider";
 
 export function WalkinForm({ tenantId, services, barbers, currentUserId, isAdmin }: any) {
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -46,6 +49,7 @@ export function WalkinForm({ tenantId, services, barbers, currentUserId, isAdmin
         barberId,
         serviceIds: Array.from(selectedServices)
       });
+      toast("Agendamento criado com sucesso!", "success");
       router.push("/tenant");
     } catch (err: any) {
       setError(err.message);

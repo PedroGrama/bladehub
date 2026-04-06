@@ -9,9 +9,9 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 async function main() {
-  const adminEmail = "admin@local";
-  const tenantEmail = "tenant@local";
-  const barberEmail = "barbeiro@local";
+  const adminEmail = "admin@local.com";
+  const tenantEmail = "tenant@local.com";
+  const barberEmail = "barbeiro@local.com";
 
   const adminPass = "admin123";
   const tenantPass = "tenant123";
@@ -37,7 +37,7 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: adminEmail },
-    update: { name: "Admin Geral", passwordHash: adminHash, role: "admin_geral", isActive: true },
+    update: { name: "Admin Geral", passwordHash: adminHash, role: "admin_geral", isActive: true, emailVerifiedAt: new Date() },
     create: {
       name: "Admin Geral",
       email: adminEmail,
@@ -46,6 +46,7 @@ async function main() {
       isActive: true,
       tenantId: null,
       isBarber: false,
+      emailVerifiedAt: new Date(),
     },
   });
 
@@ -58,6 +59,7 @@ async function main() {
       role: "tenant_admin",
       isActive: true,
       isBarber: true,
+      emailVerifiedAt: new Date(),
     },
     create: {
       tenantId: tenant.id,
@@ -67,6 +69,7 @@ async function main() {
       role: "tenant_admin",
       isActive: true,
       isBarber: true,
+      emailVerifiedAt: new Date(),
     },
   });
 
@@ -79,6 +82,7 @@ async function main() {
       role: "barbeiro",
       isActive: true,
       isBarber: true,
+      emailVerifiedAt: new Date(),
     },
     create: {
       tenantId: tenant.id,
@@ -88,6 +92,7 @@ async function main() {
       role: "barbeiro",
       isActive: true,
       isBarber: true,
+      emailVerifiedAt: new Date(),
     },
   });
 
