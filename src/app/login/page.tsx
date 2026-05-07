@@ -191,7 +191,11 @@ function LoginForm() {
           </div>
 
           {/* Google Login Button */}
-          <GoogleLoginButton />
+          <GoogleLoginButton 
+            externalLoading={loading}
+            setExternalLoading={setLoading}
+            setExternalError={setError}
+          />
           
           <div className="mt-10 pt-8 border-t border-white/5 text-center">
              <p className="text-xs text-zinc-500 font-bold tracking-tight">

@@ -16,6 +16,12 @@ export async function updateTenantSettings(formData: FormData) {
   const slug = formData.get("slug") as string;
   const logoUrl = formData.get("logoUrl") as string;
   const pixKey = formData.get("pixKey") as string;
+  const cnpj = formData.get("cnpj") as string;
+  const ownerName = formData.get("ownerName") as string;
+  const phone = formData.get("phone") as string;
+  const email = formData.get("email") as string;
+  const address = formData.get("address") as string;
+  
   const allowChooseBarber = formData.get("allowChooseBarber") === "on";
   const appDiscountType = formData.get("appDiscountType") as string;
   const appDiscountValue = Number(formData.get("appDiscountValue") || 0);
@@ -33,7 +39,20 @@ export async function updateTenantSettings(formData: FormData) {
 
   await prisma.tenant.update({
     where: { id: tenantId },
-    data: { name, slug, logoUrl, pixKey, allowChooseBarber, appDiscountType, appDiscountValue }
+    data: { 
+      name, 
+      slug, 
+      logoUrl, 
+      pixKey, 
+      cnpj,
+      ownerName,
+      phone,
+      email,
+      address,
+      allowChooseBarber, 
+      appDiscountType, 
+      appDiscountValue 
+    }
   });
 
   revalidatePath("/tenant/settings");

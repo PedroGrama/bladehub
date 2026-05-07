@@ -7,12 +7,33 @@ import { motion } from "framer-motion";
 
 interface GoogleLoginButtonProps {
   isLandingPage?: boolean;
+  externalLoading?: boolean;
+  setExternalError?: (error: string | null) => void;
+  setExternalLoading?: (loading: boolean) => void;
 }
 
-export function GoogleLoginButton({ isLandingPage = false }: GoogleLoginButtonProps) {
+export function GoogleLoginButton({ 
+  isLandingPage = false,
+  externalLoading,
+  setExternalError,
+  setExternalLoading 
+}: GoogleLoginButtonProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [internalLoading, setInternalLoading] = useState(false);
+  const [internalError, setInternalError] = useState<string | null>(null);
+
+  const loading = externalLoading ?? internalLoading;
+  const error = internalError; // We will show internal errors locally but also send to parent if asked
+
+  const setLoading = (val: boolean) => {
+    setInternalLoading(val);
+    if (setExternalLoading) setExternalLoading(val);
+  };
+
+  const setError = (val: string | null) => {
+    setInternalError(val);
+    if (setExternalError) setExternalError(val);
+  };
 
   async function handleGoogleLogin() {
     setLoading(true);
@@ -78,7 +99,7 @@ export function GoogleLoginButton({ isLandingPage = false }: GoogleLoginButtonPr
         )}
       </button>
 
-      {error && (
+      {error && !setExternalError && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { updateAppointmentStatus, finalizeReview, registerPayment, repassAppointment, updateAppointmentBarber } from "./actions";
+import { updateAppointmentStatus, finalizeReview, registerPayment, repassAppointment, updateAppointmentBarber, validateAndAddService } from "./actions";
 import { useToast } from "@/components/ToastProvider";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { 
@@ -284,26 +284,78 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
             key="progress"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`${cardBase} text-center`}
+            className={`${cardBase}`}
           >
-            <div className="relative w-24 h-24 mx-auto mb-8">
-              <div className="absolute inset-0 border-4 border-blue-500/20 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center text-3xl">
-                <Clock className="w-10 h-10 text-blue-500" />
+            <div className="flex flex-col items-center mb-8">
+              <div className="relative w-20 h-20 mb-4">
+                <div className="absolute inset-0 border-4 border-blue-500/20 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center text-3xl">
+                  <Clock className="w-8 h-8 text-blue-500" />
+                </div>
               </div>
+              <h2 className="text-2xl font-black text-white">Atendimento Ativo</h2>
+              <p className="text-zinc-500 text-xs">O cronômetro está rodando.</p>
+            </div>
+
+            <div className="space-y-4 mb-8">
+               <div className="flex items-center justify-between px-2">
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Serviços em Execução</h3>
+                 <span className="text-[10px] font-bold text-blue-500 tracking-widest">{appointment.items.length} itens</span>
+               </div>
+               
+               <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                  {appointment.items.map((item: any) => (
+                    <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/2 border border-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                          <Scissors className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-bold text-white">{item.nameSnapshot}</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-zinc-500">{item.durationMinutesSnapshot}m</span>
+                    </div>
+                  ))}
+               </div>
+
+               <div className="pt-4 border-t border-white/5">
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-3 px-2">Incluir Novo Serviço</h3>
+                 <div className="grid grid-cols-1 gap-2">
+                    {tenantServices
+                      .filter((s: any) => !appointment.items.some((i: any) => i.serviceId === s.id))
+                      .map((s: any) => (
+                        <button
+                          key={s.id}
+                          disabled={loading}
+                          onClick={async () => {
+                            setLoading(true);
+                            try {
+                              await validateAndAddService(appointment.id, s.id);
+                              toast(`Serviço ${s.name} adicionado com sucesso!`, "success");
+                            } catch(e: any) {
+                              toast(e.message, "error");
+                            }
+                            setLoading(false);
+                          }}
+                          className="flex items-center justify-between p-3 rounded-2xl bg-zinc-900 border border-white/5 hover:border-blue-500/30 transition-all text-left group"
+                        >
+                          <span className="text-xs font-bold text-zinc-400 group-hover:text-white transition-colors">{s.name}</span>
+                          <Plus className="w-4 h-4 text-zinc-600 group-hover:text-blue-500 transition-colors" />
+                        </button>
+                    ))}
+                 </div>
+               </div>
             </div>
             
-            <h2 className="text-3xl font-extrabold text-white mb-2">Atendimento Ativo</h2>
-            <p className="text-zinc-500 text-sm max-w-xs mx-auto mb-10 leading-relaxed">
-              Serviço em andamento. Clique abaixo assim que finalizar o atendimento para processar os valores.
-            </p>
-            
             <button 
-              onClick={() => setIsReviewing(true)} 
-              className="w-full rounded-2xl bg-white py-4 text-sm font-black text-zinc-950 hover:bg-zinc-200 transition shadow-xl shadow-white/5"
+              onClick={() => {
+                // Sincronizar selectedItems com o que está no banco antes de revisar
+                setSelectedItems(appointment.items);
+                setIsReviewing(true);
+              }} 
+              className="w-full rounded-2xl bg-white py-4 text-xs font-black text-zinc-950 hover:bg-zinc-200 transition shadow-xl shadow-white/5 tracking-widest uppercase"
             >
-              FINALIZAR SERVIÇO
+              FINALIZAR ATENDIMENTO
             </button>
           </motion.div>
         )}

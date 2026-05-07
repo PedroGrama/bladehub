@@ -21,8 +21,7 @@ export async function doCheckIn(appointmentId: string) {
   await prisma.appointment.update({
     where: { id: appointmentId },
     data: { 
-      clientConfirmedAt: now,
-      status: "in_progress"
+      clientConfirmedAt: now
     }
   });
 

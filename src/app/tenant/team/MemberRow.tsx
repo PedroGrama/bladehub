@@ -280,9 +280,9 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
                 }`}
               >
                 {member.isActive ? "Suspender" : "Ativar Membro"}
-              </button>
+            </button>
             )}
-            {!isOtherAdmin && (
+            {(!isOtherAdmin || isAdmin) && (
               <button 
                 onClick={handleToggleIsBarber}
                 className={`text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl border transition-all duration-300 h-11 flex items-center justify-center ${

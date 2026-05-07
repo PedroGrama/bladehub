@@ -146,6 +146,64 @@ export function SettingsForm({ tenant }: { tenant: any }) {
           <p className="text-xs text-zinc-500 mt-1">Sua chave PIX que será mostrada no QRCode pós-atendimento.</p>
         </div>
 
+        <div className="pt-6 border-t dark:border-zinc-800 space-y-4">
+          <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-widest text-[10px]">Dados de Cadastro do Estabelecimento</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-zinc-500 uppercase tracking-widest text-[10px] mb-1 ml-1">CNPJ (Opcional)</label>
+              <input 
+                type="text" 
+                name="cnpj" 
+                defaultValue={tenant.cnpj || ""} 
+                placeholder="00.000.000/0000-00"
+                className="w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-zinc-950 dark:border-zinc-800 font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-zinc-500 uppercase tracking-widest text-[10px] mb-1 ml-1">Responsável / Proprietário</label>
+              <input 
+                type="text" 
+                name="ownerName" 
+                defaultValue={tenant.ownerName || ""} 
+                placeholder="Nome do responsável"
+                className="w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-zinc-950 dark:border-zinc-800 font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-zinc-500 uppercase tracking-widest text-[10px] mb-1 ml-1">Telefone de Contato</label>
+              <input 
+                type="text" 
+                name="phone" 
+                defaultValue={tenant.phone || ""} 
+                placeholder="(00) 00000-0000"
+                className="w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-zinc-950 dark:border-zinc-800 font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-zinc-500 uppercase tracking-widest text-[10px] mb-1 ml-1">E-mail de Contato</label>
+              <input 
+                type="email" 
+                name="email" 
+                defaultValue={tenant.email || ""} 
+                placeholder="estabelecimento@email.com"
+                className="w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-zinc-950 dark:border-zinc-800 font-bold"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-zinc-500 uppercase tracking-widest text-[10px] mb-1 ml-1">Endereço Completo</label>
+            <textarea 
+              name="address" 
+              defaultValue={tenant.address || ""} 
+              placeholder="Rua, Número, Bairro, Cidade - UF"
+              rows={2}
+              className="w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-zinc-950 dark:border-zinc-800 font-bold resize-none"
+            />
+          </div>
+        </div>
+
         <div className="flex items-center gap-3 pt-2">
           <input 
             type="checkbox" 

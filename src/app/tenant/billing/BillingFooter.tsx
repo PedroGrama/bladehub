@@ -11,7 +11,7 @@ interface BillingFooterProps {
 }
 
 export function BillingFooter({ 
-  contactEmail, 
+  contactEmail = "Pedro.phfg11@gmail.com", 
   tenantPlan,
   defaultMonthlyFee = 89,
   defaultTaxPct = 3

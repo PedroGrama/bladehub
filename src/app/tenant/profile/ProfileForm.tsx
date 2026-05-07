@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, Camera, Check, ShieldAlert, BadgeCheck, Save, Loader2, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
-import { updateProfile, updatePassword } from "./actions";
+import { updateProfile, updatePassword, toggleBarberStatus } from "./actions";
 import { useRouter } from "next/navigation";
 
 interface ProfileFormProps {
@@ -19,8 +19,27 @@ export default function ProfileForm({ user, tenant, isAdmin }: ProfileFormProps)
   // Profile state
   const [name, setName] = useState(user.name || "");
   const [email, setEmail] = useState(user.email || "");
-  const [avatarPreview, setAvatarPreview] = useState(user.avatarUrl || "");
+  const [avatarPreview, setAvatarPreview] = useState(user.image || "");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  
+  const [isBarber, setIsBarber] = useState(user.isBarber);
+  const [isTogglingBarber, setIsTogglingBarber] = useState(false);
+
+  const handleToggleBarber = async () => {
+    setIsTogglingBarber(true);
+    try {
+      const res = await toggleBarberStatus();
+      if (res.success) {
+        setIsBarber(res.isBarber);
+        toast(`Status de atendente ${res.isBarber ? "ativado" : "desativado"}`, "success");
+        router.refresh();
+      }
+    } catch (err: any) {
+      toast(err.message, "error");
+    } finally {
+      setIsTogglingBarber(false);
+    }
+  };
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,7 +76,7 @@ export default function ProfileForm({ user, tenant, isAdmin }: ProfileFormProps)
     e.preventDefault();
     setIsSavingProfile(true);
     try {
-      await updateProfile({ name, email, avatarUrl: avatarPreview });
+      await updateProfile({ name, email, image: avatarPreview });
       toast("Perfil atualizado com sucesso!", "success");
       router.refresh();
     } catch (err: any) {
@@ -108,7 +127,7 @@ export default function ProfileForm({ user, tenant, isAdmin }: ProfileFormProps)
                 {avatarPreview ? (
                    <img src={avatarPreview} alt={user.name} className="w-full h-full object-cover" />
                 ) : (
-                   <div className="text-zinc-300"><User className="w-12 h-12" /></div>
+                   <div className="text-zinc-300"><ImageIcon className="w-12 h-12" /></div>
                 )}
               </div>
               <label className="absolute bottom-0 right-0 p-2.5 bg-blue-600 text-white rounded-full shadow-lg hover:scale-110 active:scale-90 transition-all border-2 border-white dark:border-zinc-900 cursor-pointer">
@@ -125,6 +144,33 @@ export default function ProfileForm({ user, tenant, isAdmin }: ProfileFormProps)
                 <button type="button" onClick={() => setAvatarPreview("")} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-all">
                    Remover Foto
                 </button>
+              </div>
+            )}
+
+            {/* Status de Atendente (Apenas para Admin) */}
+            {isAdmin && user.role !== "admin_geral" && (
+              <div className="w-full pt-6 border-t border-zinc-100 dark:border-white/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Modo Atendente</span>
+                  <button 
+                    type="button"
+                    disabled={isTogglingBarber}
+                    onClick={handleToggleBarber}
+                    className={`relative w-12 h-6 rounded-full transition-all duration-500 ${isBarber ? 'bg-orange-500 shadow-lg shadow-orange-500/20' : 'bg-zinc-200 dark:bg-zinc-800'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-500 ${isBarber ? 'left-7' : 'left-1'}`} />
+                  </button>
+                </div>
+                <p className="text-[10px] text-zinc-500 font-medium leading-relaxed">
+                  {isBarber 
+                    ? "Você aparece na agenda e pode ser selecionado por clientes." 
+                    : "Você atua apenas como administrador do sistema."}
+                </p>
+                {isBarber && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase text-orange-600 dark:text-orange-400 tracking-widest">Atendente Ativo</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -85,17 +85,17 @@ export default async function AdminHome() {
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-xs text-zinc-500 md:inline">{user.email}</span>
-            <Link href="/admin/email-tracking" className="rounded-lg bg-purple-100 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/50 px-3 py-2 text-xs font-semibold text-purple-700 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/30 transition flex items-center gap-1.5">
+            <Link href="/admin/email-tracking" className="rounded-lg bg-purple-100 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 px-3 py-2 text-xs font-semibold text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-500/20 transition flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Emails</span>
             </Link>
-            <Link href="/admin/system-config" className="rounded-lg bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 px-3 py-2 text-xs font-semibold text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/30 transition flex items-center gap-1.5">
+            <Link href="/admin/system-config" className="rounded-lg bg-blue-100 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 px-3 py-2 text-xs font-semibold text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-500/20 transition flex items-center gap-1.5">
               <Settings className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Configurações</span>
             </Link>
             <ThemeToggle />
             <form action="/api/auth/logout" method="post">
-              <button className="rounded-full bg-zinc-100 dark:bg-gradient-to-r dark:from-zinc-800 dark:to-zinc-900 border border-zinc-200 dark:border-white/10 px-4 py-2 text-xs font-semibold text-zinc-900 dark:text-white hover:opacity-90 transition">
+              <button className="rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 px-4 py-2 text-xs font-semibold text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition">
                 Sair
               </button>
             </form>

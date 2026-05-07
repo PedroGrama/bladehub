@@ -35,9 +35,9 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
     let fpDate: any;
     let fpTime: any;
     
-    // Get today's date and current time
+    // Get today's date and current time (LOCAL)
     const now = new Date();
-    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const today = now.toLocaleDateString('en-CA'); // YYYY-MM-DD format (local)
     const currentHour = String(now.getHours()).padStart(2, '0');
     const currentMinute = String(now.getMinutes()).padStart(2, '0');
     const currentTime = `${currentHour}:${currentMinute}`;
@@ -47,7 +47,7 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
         locale: Portuguese,
         dateFormat: "d/m/Y",
         minDate: "today",
-        defaultDate: today,
+        defaultDate: now, // Pass Date object for precision
         allowInput: true,
         disableMobile: false,
         onChange: (selectedDates, dateStr) => {
@@ -80,7 +80,7 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
         noCalendar: true,
         dateFormat: "H:i",
         time_24hr: true,
-        defaultDate: currentTime,
+        defaultDate: now, // Pass Date object
         allowInput: true,
         disableMobile: false,
         minTime: currentTime, // Initially set to current time

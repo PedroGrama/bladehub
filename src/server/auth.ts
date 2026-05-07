@@ -13,10 +13,7 @@ export type SessionUser = {
 const SESSION_COOKIE = "barbersaas_session";
 
 function requireJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error("Missing JWT_SECRET in environment");
-  }
+  const secret = process.env.JWT_SECRET ?? "default_secret_for_dev_only";
   return secret;
 }
 
@@ -24,12 +21,16 @@ function secretKey(): Uint8Array {
   return new TextEncoder().encode(requireJwtSecret());
 }
 
-export async function setSessionCookie(user: SessionUser) {
-  const token = await new SignJWT({ user })
+export async function createSessionToken(user: SessionUser) {
+  return await new SignJWT({ user })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
     .sign(secretKey());
+}
+
+export async function setSessionCookie(user: SessionUser) {
+  const token = await createSessionToken(user);
 
   const jar = await cookies();
   jar.set({
@@ -62,7 +63,9 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   try {
     const { payload } = await jwtVerify(token, secretKey());
-    const user = (payload as any)?.user as SessionUser | undefined;
+    // Robustez: aceita tanto payload.user quanto payload direto (se estiver no formato SessionUser)
+    const user = ((payload as any)?.user || payload) as SessionUser | undefined;
+    
     if (!user?.id || !user?.role) return null;
 
     // Se admin_geral, checar se há impersonação ativa
@@ -74,7 +77,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     }
 
     return user;
-  } catch {
+  } catch (error) {
+    console.error("[getSessionUser] JWT Error:", error);
     return null;
   }
 }

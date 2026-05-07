@@ -23,7 +23,8 @@ export default async function AppointmentTrackingPage({ params }: { params: Prom
     checkedIn: !!appointment.clientConfirmedAt,
     tenantName: appointment.tenant.name,
     barberName: appointment.barber.name,
-    totalPrice: Number(appointment.pricingFinal)
+    totalPrice: Number(appointment.pricingFinal),
+    services: appointment.items.map(i => i.nameSnapshot).join(", ")
   };
 
   return (

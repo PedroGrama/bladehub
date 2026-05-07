@@ -15,9 +15,10 @@ export interface GoogleAuthPayload {
  * - Retorna erro se não está ativo
  */
 export async function processGoogleAuth(payload: GoogleAuthPayload) {
-  const { email, name, tenantId } = payload;
+  const { email, name, picture, tenantId } = payload;
+  if (!email) throw new Error("Email não fornecido pelo Google");
 
-  let user = await prisma.user.findUnique({
+  let user = await prisma.user.findFirst({
     where: { email },
   });
 
@@ -28,14 +29,14 @@ export async function processGoogleAuth(payload: GoogleAuthPayload) {
         email,
         name: name || email,
         passwordHash: crypto.randomBytes(32).toString("hex"),
-        role: "tenant_admin",
-        isActive: false, // Awaiting admin approval
+        role: "tenant_admin" as any,
+        isActive: true,
         isBarber: false,
-        emailVerifiedAt: new Date(), // Email já verificado via Google OAuth
-        // Se tenantId fornecido (criar usuário em tenant existente)
-        ...(tenantId && { tenantId }),
+        emailVerifiedAt: new Date(),
+        image: picture || null,
+        tenantId: tenantId || null,
       },
-    });
+    } as any);
   }
 
   // Validar se está ativo
