@@ -43,7 +43,7 @@ export default async function TenantDetailsPage({ params }: { params: Promise<{ 
     createdAt: tenant.createdAt.toISOString(),
     userCount: tenant.users.length,
     appointmentCount: tenant.appointments.length,
-    totalPayments: tenant.payments.reduce((sum, p) => sum + Number(p.amount), 0),
+    totalPayments: tenant.payments.reduce((sum: number, p: { amount: number | string }) => sum + Number(p.amount), 0),
   };
 
   return (
@@ -154,12 +154,18 @@ export default async function TenantDetailsPage({ params }: { params: Promise<{ 
                     </tr>
                   </thead>
                   <tbody className="divide-y dark:divide-white/5">
-                    {tenant.users.map((u) => (
+                    {tenant.users.map((u: { id: string; name: string; email: string; role: string; isActive: boolean }) => (
                       <tr key={u.id}>
                         <td className="py-4 text-sm font-semibold">{u.name}</td>
                         <td className="py-4 text-sm text-zinc-500">{u.email}</td>
                         <td className="py-4 text-right">
-                          <TenantUserActions userId={u.id} userEmail={u.email} userName={u.name} />
+                          <TenantUserActions
+                            userId={u.id}
+                            userEmail={u.email}
+                            userName={u.name}
+                            userRole={u.role}
+                            userIsActive={u.isActive}
+                          />
                         </td>
                       </tr>
                     ))}

@@ -43,7 +43,17 @@ export async function GET() {
     });
 
     // Transformar para o formato esperado pela UI
-    const emails = allUsers.map((user) => ({
+    const emails = allUsers.map((user: {
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+      tenantId: string | null;
+      isActive: boolean;
+      emailVerifiedAt: Date | null;
+      createdAt: Date;
+      tenant?: { id: string; name: string } | null;
+    }) => ({
       id: user.id,
       email: user.email,
       name: user.name,

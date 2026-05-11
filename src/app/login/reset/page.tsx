@@ -1,15 +1,18 @@
 "use client";
 import { useState } from "react";
 import { resetPassword } from "./actions";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 
-export default function ResetPasswordPage({ searchParams }: { searchParams: { token?: string, error?: string } }) {
+export default function ResetPasswordPage() {
   const router = useRouter();
+  const params = useSearchParams();
+  const token = params.get("token");
+  const error = params.get("error");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  if (!searchParams.token) {
+  if (!token) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="text-center">Link inválido ou expirado.</div>
@@ -24,7 +27,7 @@ export default function ResetPasswordPage({ searchParams }: { searchParams: { to
       await resetPassword(formData);
       router.push("/login?reset=success");
     } catch (e: any) {
-      router.push(`/login/reset?token=${searchParams.token}&error=${encodeURIComponent(e.message)}`);
+      router.push(`/login/reset?token=${token}&error=${encodeURIComponent(e.message)}`);
     }
   }
 
@@ -33,14 +36,14 @@ export default function ResetPasswordPage({ searchParams }: { searchParams: { to
       <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 border dark:border-zinc-800 p-8 shadow-sm">
         <h1 className="text-2xl font-bold text-center mb-6">Criar Nova Senha</h1>
         
-        {searchParams.error && (
+        {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">
-            {searchParams.error}
+            {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="hidden" name="token" value={searchParams.token} />
+          <input type="hidden" name="token" value={token ?? ""} />
           
           <div className="space-y-1.5">
             <label className="block text-sm font-medium mb-1">Nova Senha</label>

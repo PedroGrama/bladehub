@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       await (prisma as any).barberBusinessHour.createMany({ data: defaultHours });
     } else {
       // Herdar horários do estabelecimento para o profissional
-      const barberHours = tenantHours.map(th => ({
+      const barberHours = tenantHours.map((th: { weekday: number; startTime: string; endTime: string; isClosed: boolean }) => ({
         tenantId,
         barberId: newBarber.id,
         weekday: th.weekday,
