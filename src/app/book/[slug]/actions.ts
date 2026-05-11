@@ -3,8 +3,149 @@
 import { prisma } from "@/server/db";
 import { headers } from "next/headers";
 import { validarTelefone } from "@/lib/validations";
+import {
+  SLOT_STEP_MINUTES,
+  collectSlotsInSegments,
+  intersectSegments,
+  subtractBreak,
+  timeStrToMinutes,
+  intervalsOverlap,
+  weekdayFromDateStr,
+  type TimeSegment,
+} from "@/lib/booking-availability";
 
 const rateLimitByIp = new Map<string, { count: number; firstRequest: number }>();
+
+export async function getAvailableBookingSlots(input: {
+  tenantId: string;
+  dateStr: string; // YYYY-MM-DD
+  durationMinutes: number;
+  barberId: string | null; // null = qualquer profissional (união)
+}): Promise<{ times: string[]; error: string | null }> {
+  const { tenantId, dateStr, barberId } = input;
+  const durationMinutes = Math.max(0, Math.floor(input.durationMinutes));
+
+  if (!tenantId || !dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return { times: [], error: "Data inválida." };
+  }
+  if (durationMinutes <= 0) {
+    return { times: [], error: null };
+  }
+
+  try {
+    const weekday = weekdayFromDateStr(dateStr);
+    const dayStart = new Date(`${dateStr}T00:00:00`);
+    const dayEnd = new Date(`${dateStr}T23:59:59.999`);
+
+    const tenantHour = await prisma.tenantBusinessHour.findFirst({
+      where: { tenantId, weekday },
+    });
+    if (!tenantHour || tenantHour.isClosed) {
+      return { times: [], error: null };
+    }
+
+    const tStart = timeStrToMinutes(tenantHour.startTime);
+    const tEnd = timeStrToMinutes(tenantHour.endTime);
+    const tenantBreakStart = tenantHour.breakStart ? timeStrToMinutes(tenantHour.breakStart) : null;
+    const tenantBreakEnd = tenantHour.breakEnd ? timeStrToMinutes(tenantHour.breakEnd) : null;
+
+    const tenantSegs = subtractBreak(tStart, tEnd, tenantBreakStart, tenantBreakEnd);
+
+    const barberRows = await prisma.user.findMany({
+      where: {
+        tenantId,
+        isBarber: true,
+        isActive: true,
+        deletedAt: null,
+        ...(barberId ? { id: barberId } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (barberRows.length === 0) {
+      return { times: [], error: "Não há profissionais disponíveis." };
+    }
+
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const isToday = dateStr === todayStr;
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const buffer = SLOT_STEP_MINUTES;
+    const filterFloor = isToday ? nowMins + buffer : undefined;
+
+    const slotSet = new Set<string>();
+
+    for (const { id: bid } of barberRows) {
+      const barberHour = await prisma.barberBusinessHour.findFirst({
+        where: { tenantId, barberId: bid, weekday },
+      });
+      if (barberHour?.isClosed) continue;
+
+      const barberSegs =
+        !barberHour
+          ? tenantSegs
+          : subtractBreak(
+              timeStrToMinutes(barberHour.startTime),
+              timeStrToMinutes(barberHour.endTime),
+              barberHour.breakStart ? timeStrToMinutes(barberHour.breakStart) : null,
+              barberHour.breakEnd ? timeStrToMinutes(barberHour.breakEnd) : null
+            );
+
+      const working: TimeSegment[] = [];
+      for (const ts of tenantSegs) {
+        for (const bs of barberSegs) {
+          const x = intersectSegments(ts, bs);
+          if (x) working.push(x);
+        }
+      }
+
+      if (working.length === 0) continue;
+
+      const appointments = await prisma.appointment.findMany({
+        where: {
+          tenantId,
+          barberId: bid,
+          status: { not: "cancelled" },
+          scheduledStart: { gte: dayStart, lte: dayEnd },
+        },
+        select: { scheduledStart: true, scheduledEnd: true },
+      });
+
+      const apptIntervals = appointments.map((a) => ({
+        start: a.scheduledStart.getHours() * 60 + a.scheduledStart.getMinutes(),
+        end: a.scheduledEnd.getHours() * 60 + a.scheduledEnd.getMinutes(),
+      }));
+
+      const candidates = collectSlotsInSegments(
+        working,
+        durationMinutes,
+        SLOT_STEP_MINUTES,
+        filterFloor
+      );
+
+      for (const timeStr of candidates) {
+        const t = timeStrToMinutes(timeStr);
+        const newEnd = t + durationMinutes;
+        let conflict = false;
+        for (const ap of apptIntervals) {
+          if (intervalsOverlap(t, newEnd, ap.start, ap.end)) {
+            conflict = true;
+            break;
+          }
+        }
+        if (!conflict) slotSet.add(timeStr);
+      }
+    }
+
+    const times = Array.from(slotSet).sort(
+      (a, b) => timeStrToMinutes(a) - timeStrToMinutes(b)
+    );
+    return { times, error: null };
+  } catch (e: unknown) {
+    console.error("[getAvailableBookingSlots]", e);
+    return { times: [], error: "Não foi possível carregar horários." };
+  }
+}
 
 export async function createPublicAppointment(data: {
   tenantId: string,
@@ -13,10 +154,19 @@ export async function createPublicAppointment(data: {
   dateStr: string, // "YYYY-MM-DD"
   timeStr: string, // "HH:MM"
   barberId: string | null,
-  serviceIds: string[]
+  serviceIds: string[],
+  consentAccepted?: boolean,
+  consentAcceptedAt?: string | null,
 }) {
   try {
     const { tenantId, clientName, clientPhone, dateStr, timeStr, serviceIds } = data;
+    const consentAccepted = Boolean(data.consentAccepted);
+    const consentAcceptedAt =
+      consentAccepted && data.consentAcceptedAt
+        ? new Date(data.consentAcceptedAt)
+        : consentAccepted
+          ? new Date()
+          : null;
     let barberId = data.barberId;
 
     console.log("[createPublicAppointment] Início do processo", {
@@ -163,24 +313,26 @@ export async function createPublicAppointment(data: {
     }
 
     const barberHour = await prisma.barberBusinessHour.findFirst({ where: { tenantId, barberId, weekday } });
-    if (!barberHour || barberHour.isClosed) {
+    if (barberHour?.isClosed) {
       return { error: "O barbeiro não atende neste dia." };
     }
 
-    console.log("[createPublicAppointment] Verificando horário do barbeiro", { barberId, weekday, startTimeMins });
-    const bBarbStart = timeToMins(barberHour.startTime)!;
-    const bBarbEnd = timeToMins(barberHour.endTime)!;
-    if (startTimeMins < bBarbStart || endTimeMins > bBarbEnd) {
-      return { error: `O barbeiro atende apenas de ${barberHour.startTime} às ${barberHour.endTime} neste dia.` };
-    }
+    if (barberHour) {
+      console.log("[createPublicAppointment] Verificando horário do barbeiro", { barberId, weekday, startTimeMins });
+      const bBarbStart = timeToMins(barberHour.startTime)!;
+      const bBarbEnd = timeToMins(barberHour.endTime)!;
+      if (startTimeMins < bBarbStart || endTimeMins > bBarbEnd) {
+        return { error: `O barbeiro atende apenas de ${barberHour.startTime} às ${barberHour.endTime} neste dia.` };
+      }
 
-    const bBreakStart = timeToMins(barberHour.breakStart);
-    const bBreakEnd = timeToMins(barberHour.breakEnd);
-    if (bBreakStart !== null && bBreakEnd !== null) {
-      if ((startTimeMins >= bBreakStart && startTimeMins < bBreakEnd) ||
-          (endTimeMins > bBreakStart && endTimeMins <= bBreakEnd) ||
-          (startTimeMins <= bBreakStart && endTimeMins >= bBreakEnd)) {
-        return { error: `Este horário conflita com a pausa do barbeiro (${barberHour.breakStart} às ${barberHour.breakEnd}).` };
+      const bBreakStart = timeToMins(barberHour.breakStart);
+      const bBreakEnd = timeToMins(barberHour.breakEnd);
+      if (bBreakStart !== null && bBreakEnd !== null) {
+        if ((startTimeMins >= bBreakStart && startTimeMins < bBreakEnd) ||
+            (endTimeMins > bBreakStart && endTimeMins <= bBreakEnd) ||
+            (startTimeMins <= bBreakStart && endTimeMins >= bBreakEnd)) {
+          return { error: `Este horário conflita com a pausa do barbeiro (${barberHour.breakStart} às ${barberHour.breakEnd}).` };
+        }
       }
     }
 
@@ -214,8 +366,10 @@ export async function createPublicAppointment(data: {
           data: { tenantId, name: clientName, phone: clientPhone }
         });
         console.log("[createPublicAppointment] cliente criado", { clientId: client.id });
-      } catch (clientError: any) {
-        console.error("[createPublicAppointment] falha ao criar client", { error: clientError?.message, stack: clientError?.stack });
+      } catch (clientError: unknown) {
+        const msg = clientError instanceof Error ? clientError.message : String(clientError);
+        const stack = clientError instanceof Error ? clientError.stack : undefined;
+        console.error("[createPublicAppointment] falha ao criar client", { error: msg, stack });
         return { error: "Falha ao criar cliente do agendamento. Tente novamente." };
       }
     }
@@ -250,6 +404,8 @@ export async function createPublicAppointment(data: {
           pricingOriginal: totalPrice,
           discountApplied: discountApplied,
           pricingFinal: pricingFinal,
+          consentAccepted,
+          consentAcceptedAt,
         }
       });
 
@@ -272,15 +428,18 @@ export async function createPublicAppointment(data: {
     rateLimitByIp.set(ip, existing);
     console.log("[createPublicAppointment] Agendamento criado com sucesso!", { appointmentId });
     return { appointmentId };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    const code = error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code) : undefined;
+    const stack = error instanceof Error ? error.stack : undefined;
     console.error("[createPublicAppointment] ERRO CRÍTICO:", {
-      message: error?.message,
-      code: error?.code,
-      stack: error?.stack,
+      message,
+      code,
+      stack,
       input: data
     });
 
-    const detailed = error?.message ? `Erro ao criar agendamento: ${error.message}` : "Erro interno ao processar agendamento.";
+    const detailed = message ? `Erro ao criar agendamento: ${message}` : "Erro interno ao processar agendamento.";
     return { error: detailed };
   }
 }

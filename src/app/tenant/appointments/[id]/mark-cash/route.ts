@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/server/auth";
 import { prisma } from "@/server/db";
+import { safeRunLoyaltySealForAppointment } from "@/server/loyalty/processLoyaltySeal";
 
 export async function POST(
   req: Request,
@@ -32,6 +33,8 @@ export async function POST(
       data: { status: "done" },
     });
   });
+
+  await safeRunLoyaltySealForAppointment(appointment.id);
 
   return NextResponse.redirect(new URL(`/tenant/appointments/${appointment.id}`, req.url));
 }

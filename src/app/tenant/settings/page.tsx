@@ -2,6 +2,7 @@ import { getSessionUser } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { redirect } from "next/navigation";
 import { SettingsForm } from "./SettingsForm";
+import { LoyaltyWhatsappSettings } from "./LoyaltyWhatsappSettings";
 
 export default async function TenantSettingsPage() {
   const user = await getSessionUser();
@@ -36,6 +37,12 @@ export default async function TenantSettingsPage() {
     testeExpiraEm: t.testeExpiraEm ? (t.testeExpiraEm as Date).toISOString() : null,
     appDiscountType: t.appDiscountType ?? "none",
     appDiscountValue: t.appDiscountValue ? Number(t.appDiscountValue) : 0,
+    loyaltySealsEnabled: Boolean(t.loyaltySealsEnabled),
+    loyaltySealGoal: typeof t.loyaltySealGoal === "number" ? t.loyaltySealGoal : 10,
+    loyaltyRewardDesc: t.loyaltyRewardDesc ?? "Corte grátis",
+    solanaWalletPublicKey: t.solanaWalletPublicKey ?? null,
+    evolutionInstanceName: t.evolutionInstanceName ?? null,
+    evolutionConnected: Boolean(t.evolutionConnected),
   };
 
   return (
@@ -48,6 +55,16 @@ export default async function TenantSettingsPage() {
       <div className="bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
         <SettingsForm tenant={serializedTenant} />
       </div>
+
+      <LoyaltyWhatsappSettings
+        tenantId={serializedTenant.id}
+        loyaltySealsEnabled={serializedTenant.loyaltySealsEnabled}
+        loyaltySealGoal={serializedTenant.loyaltySealGoal}
+        loyaltyRewardDesc={serializedTenant.loyaltyRewardDesc}
+        solanaWalletPublicKey={serializedTenant.solanaWalletPublicKey}
+        evolutionInstanceName={serializedTenant.evolutionInstanceName}
+        evolutionConnected={serializedTenant.evolutionConnected}
+      />
 
       {serializedTenant.slug && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900 rounded-2xl p-6">

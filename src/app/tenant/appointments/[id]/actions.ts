@@ -3,6 +3,7 @@
 import { prisma } from "@/server/db";
 import { getSessionUser } from "@/server/auth";
 import { revalidatePath } from "next/cache";
+import { safeRunLoyaltySealForAppointment } from "@/server/loyalty/processLoyaltySeal";
 
 export async function updateAppointmentStatus(id: string, status: any) {
   const user = await getSessionUser();
@@ -80,6 +81,8 @@ export async function registerPayment(appointmentId: string, methodStr: string, 
       data: { status: "done" }
     });
   });
+
+  await safeRunLoyaltySealForAppointment(appointmentId);
 
   revalidatePath(`/tenant/appointments/${appointmentId}`);
   revalidatePath(`/tenant`);
