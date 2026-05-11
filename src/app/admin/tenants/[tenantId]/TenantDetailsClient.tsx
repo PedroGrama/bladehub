@@ -236,7 +236,7 @@ export function TenantDetailsClient({ tenant }: { tenant: TenantData }) {
               title: "Excluir Estabelecimento",
               message: "Tem certeza? Esta ação é IRREVERSÍVEL e apagará todos os dados do tenant.",
               confirmText: "Excluir Permanentemente",
-              isDangerous: true,
+              variant: "danger"
             });
             if (confirmed) {
               setLoading(true);

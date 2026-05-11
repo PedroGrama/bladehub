@@ -1,15 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { requestPasswordReset } from "./actions";
 
-export default function ForgotPasswordPage() {
+export default function ForgotPasswordPage({ searchParams }: { searchParams: { success?: string, error?: string } }) {
   const router = useRouter();
-  const params = useSearchParams();
-  const success = params.get("success");
-  const error = params.get("error");
-
-  if (success) {
+  if (searchParams.success) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-4">
         <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 border dark:border-zinc-800 p-8 shadow-sm text-center">
@@ -50,9 +46,9 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 border dark:border-zinc-800 p-8 shadow-sm">
         <h1 className="text-2xl font-bold text-center mb-6">Esqueci minha senha</h1>
         
-        {error && (
+        {searchParams.error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">
-            {error}
+            {searchParams.error}
           </div>
         )}
 
