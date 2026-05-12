@@ -182,7 +182,7 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
             )}
           </div>
           <div className="flex sm:flex-col gap-2 justify-end pt-2 sm:pt-0">
-            <button disabled={loading} onClick={handleSaveEdit} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-bold text-xs hover:opacity-90 transition shadow-lg shadow-black/10">
+            <button disabled={loading} onClick={handleSaveEdit} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100">
               <Save className="w-3.5 h-3.5" /> Salvar
             </button>
             <button onClick={() => setIsEditing(false)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 rounded-xl font-bold text-xs hover:bg-zinc-200 dark:hover:bg-white/10 transition">
@@ -287,11 +287,11 @@ export function MemberRow({ member, currentUserRole }: { member: any; currentUse
                 onClick={handleToggleIsBarber}
                 className={`text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl border transition-all duration-300 h-11 flex items-center justify-center ${
                   member.isBarber 
-                    ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-zinc-900 dark:border-white shadow-xl shadow-zinc-900/10 dark:shadow-white/5' 
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-600/20 dark:bg-white dark:text-zinc-900 dark:border-white dark:shadow-white/5' 
                     : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-400 border-zinc-100 dark:border-white/5 hover:bg-zinc-100 hover:text-zinc-600'
                 }`}
               >
-                {member.isBarber ? "Agenda Ativa" : "Configurar Agenda"}
+                {member.isBarber ? "Agenda Ativa" : "Agenda Desativada"}
               </button>
             )}
           </div>

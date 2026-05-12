@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Scissors, Mail, Lock, Eye, EyeOff, ChevronRight, Loader2, ShieldCheck, ArrowLeft, Zap } from "lucide-react";
-import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 
 function LoginForm() {
   const router = useRouter();
@@ -180,22 +179,6 @@ function LoginForm() {
             </button>
           </form>
 
-          {/* Social Auth Separator */}
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/5"></div>
-            </div>
-            <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest">
-              <span className="bg-zinc-950 px-4 text-zinc-600">Ou continuar com</span>
-            </div>
-          </div>
-
-          {/* Google Login Button */}
-          <GoogleLoginButton 
-            externalLoading={loading}
-            setExternalLoading={setLoading}
-            setExternalError={setError}
-          />
           
           <div className="mt-10 pt-8 border-t border-white/5 text-center">
              <p className="text-xs text-zinc-500 font-bold tracking-tight">

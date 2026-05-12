@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doCheckIn } from "./actions";
 import { getStatusLabel, statusColors } from "@/lib/labels";
+import { useToast } from "@/components/ToastProvider";
 
 export function TrackerClient({ appointment, slug }: { appointment: any, slug: string }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [now, setNow] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [checkedIn, setCheckedIn] = useState(appointment.checkedIn);
@@ -27,9 +29,9 @@ export function TrackerClient({ appointment, slug }: { appointment: any, slug: s
     try {
       await doCheckIn(appointment.id);
       setCheckedIn(true);
-      alert("Check-in realizado com sucesso! Aguarde ser chamado.");
+      toast("Check-in realizado com sucesso! Aguarde ser chamado.", "success");
     } catch (e: any) {
-      alert(e.message);
+      toast(e.message, "error");
     }
     setLoading(false);
   }

@@ -67,7 +67,7 @@ export function TermsModal({ open, onClose, onAccept }: TermsModalProps) {
         <button
           type="button"
           onClick={onAccept}
-          className="mt-8 w-full rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="mt-8 w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
         >
           Entendi e aceito
         </button>

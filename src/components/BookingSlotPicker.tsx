@@ -176,14 +176,11 @@ export function BookingSlotPicker({
 
         {!loading && !fetchError && valueDate && !hasSlots && (
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-8 text-center dark:border-zinc-800 dark:bg-zinc-900/50">
-            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Nenhum horário livre neste dia
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Sem horários disponíveis no momento.
             </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Tente outra data ou outro profissional. Se os profissionais ainda não tiverem grade própria cadastrada,
-              usamos o mesmo horário da barbearia. Verifique também se o dia está aberto em{" "}
-              <span className="font-medium">Configurações → Horários</span> e se a duração dos serviços não excede o
-              expediente.
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Tente novamente em instantes. Se o problema continuar, verifique as configurações de horário do estabelecimento.
             </p>
           </div>
         )}

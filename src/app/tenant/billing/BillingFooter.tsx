@@ -24,7 +24,7 @@ export function BillingFooter({
          <div className="space-y-1">
             <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Suporte BladeHub</p>
             <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">
-               Dúvidas sobre pagamentos? <a href={`mailto:${contactEmail}`} className="text-blue-500 font-bold hover:underline">{contactEmail}</a>
+               Dúvidas sobre assinatura? <a href={`mailto:${contactEmail}`} className="text-blue-500 font-bold hover:underline">{contactEmail}</a>
             </p>
          </div>
          <div className="flex items-center gap-4">
@@ -34,7 +34,7 @@ export function BillingFooter({
             >
               Saber mais
             </button>
-            <button className="px-6 py-3 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all">
+            <button className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100">
               Falar com um consultor
             </button>
          </div>

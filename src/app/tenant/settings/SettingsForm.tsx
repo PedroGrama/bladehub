@@ -204,22 +204,6 @@ export function SettingsForm({ tenant }: { tenant: any }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 pt-2">
-          <input 
-            type="checkbox" 
-            name="allowChooseBarber" 
-            id="allowChooseBarber"
-            defaultChecked={tenant.allowChooseBarber} 
-            className="w-4 h-4 rounded border-zinc-300 text-zinc-900"
-          />
-          <label htmlFor="allowChooseBarber" className="text-sm font-medium cursor-pointer">
-            Permitir que o cliente escolha o profissional
-          </label>
-        </div>
-        <p className="text-xs text-zinc-500 mb-4 pl-7">
-          Se desmarcado, o sistema distribuirá os clientes automaticamente entre os profissionais de forma justa.
-        </p>
-
         <div className="pt-6 border-t dark:border-zinc-800">
           <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-4 uppercase tracking-widest text-[10px]">Desconto para Agendamentos Online</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-blue-50/50 dark:bg-blue-500/5 p-6 rounded-3xl border border-blue-500/10 transition-all">

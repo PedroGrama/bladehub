@@ -20,7 +20,7 @@ async function main() {
   const adminHash = await bcrypt.hash(adminPass, 10);
   const tenantHash = await bcrypt.hash(tenantPass, 10);
   const barberHash = await bcrypt.hash(barberPass, 10);
-
+F
   const tenant = await prisma.tenant.upsert({
     where: { id: "seed-tenant-1" },
     update: {

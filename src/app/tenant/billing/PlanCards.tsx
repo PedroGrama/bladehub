@@ -157,7 +157,7 @@ export function PlanCards({
           </li>
           <li className="flex items-center gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400 opacity-50">
              <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 text-zinc-500">×</div>
-             Profissionais ilimitados
+             Profissionais e serviços limitados
           </li>
         </ul>
         <button disabled className="w-full py-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 font-bold text-xs uppercase tracking-widest disabled:cursor-not-allowed">

@@ -70,18 +70,18 @@ export function ServicesList({ tenantId, initialServices }: { tenantId: string, 
         <div className="grid sm:grid-cols-4 gap-4">
           <div className="col-span-2">
             <label className="block text-xs text-zinc-500 mb-1">Nome do Serviço</label>
-            <input required type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Ex: Degrade" className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
+            <input required type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Ex: Degrade" className="w-full rounded-xl border px-3 py-2 text-sm bg-white dark:bg-zinc-950 border-zinc-300 dark:border-zinc-800" />
           </div>
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Preço Base (R$)</label>
-            <input required type="number" step="0.01" value={newPrice} onChange={e => setNewPrice(Number(e.target.value))} placeholder="0.00" className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
+            <input required type="number" step="0.01" value={newPrice} onChange={e => setNewPrice(Number(e.target.value))} placeholder="0.00" className="w-full rounded-xl border px-3 py-2 text-sm bg-white dark:bg-zinc-950 border-zinc-300 dark:border-zinc-800" />
           </div>
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Duração (Min)</label>
-            <input required type="number" step="15" value={newDuration} onChange={e => setNewDuration(Number(e.target.value))} placeholder="30" className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
+            <input required type="number" step="15" value={newDuration} onChange={e => setNewDuration(Number(e.target.value))} placeholder="30" className="w-full rounded-xl border px-3 py-2 text-sm bg-white dark:bg-zinc-950 border-zinc-300 dark:border-zinc-800" />
           </div>
         </div>
-        <button disabled={loading} type="submit" className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 w-full sm:w-auto">
+        <button disabled={loading} type="submit" className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto">
           Adicionar Serviço
         </button>
       </form>
@@ -108,7 +108,7 @@ export function ServicesList({ tenantId, initialServices }: { tenantId: string, 
                       step="5" 
                       value={editDuration} 
                       onChange={e => setEditDuration(Number(e.target.value))} 
-                      className="w-20 rounded border px-2 py-1 text-sm dark:bg-zinc-950 dark:border-zinc-700"
+                      className="w-20 rounded border px-2 py-1 text-sm bg-white dark:bg-zinc-950 border-zinc-300 dark:border-zinc-700"
                     />
                   ) : (
                     `${svc.durationMinutes} min`
@@ -121,7 +121,7 @@ export function ServicesList({ tenantId, initialServices }: { tenantId: string, 
                       step="0.01" 
                       value={editPrice} 
                       onChange={e => setEditPrice(Number(e.target.value))} 
-                      className="w-24 rounded border px-2 py-1 text-sm dark:bg-zinc-950 dark:border-zinc-700"
+                      className="w-24 rounded border px-2 py-1 text-sm bg-white dark:bg-zinc-950 border-zinc-300 dark:border-zinc-700"
                     />
                   ) : (
                     `R$ ${svc.basePrice.toFixed(2)}`

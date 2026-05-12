@@ -200,9 +200,9 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
                  <button 
                    disabled={loading} 
                    onClick={() => handlePayment("CASH")} 
-                   className="w-full rounded-2xl border border-white/10 bg-white/5 py-4 text-sm font-bold text-zinc-300 hover:bg-white/10 transition flex items-center justify-center gap-2"
+                   className="w-full rounded-2xl border border-zinc-700 bg-zinc-900/90 py-4 text-sm font-bold text-white hover:bg-zinc-800 transition flex items-center justify-center gap-2"
                  >
-                   Recebi em Dinheiro <Banknote className="w-4 h-4" />
+                   Recebi em Dinheiro <Banknote className="w-4 h-4 text-white" />
                  </button>
                  <p className="text-[10px] text-zinc-600 text-center uppercase font-bold tracking-tighter">
                    Após confirmar, o status mudará para concluído

@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { redirect } from "next/navigation";
 import { AddBarberForm } from "./AddBarberForm";
 import { MemberRow } from "./MemberRow";
+import { TeamSettingsForm } from "./TeamSettingsForm";
 
 export default async function TeamPage() {
   const user = await getSessionUser();
@@ -11,6 +12,10 @@ export default async function TeamPage() {
   if (!user.tenantId) {
     return <div className="p-6">Por favor, selecione um estabelecimento pelo painel Admin geral antes.</div>;
   }
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: user.tenantId! }
+  });
 
   const team = await prisma.user.findMany({
     where: { 
@@ -36,6 +41,11 @@ export default async function TeamPage() {
       </header>
 
       <div className="flex flex-col gap-10">
+        <section className="bg-blue-50/50 dark:bg-blue-500/5 border border-blue-200/50 dark:border-blue-500/20 rounded-[16px] p-8 shadow-sm">
+          <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Configurações da Equipe</h2>
+          <TeamSettingsForm tenant={tenant} />
+        </section>
+
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">

@@ -11,6 +11,16 @@ async function verifyAdminAccess() {
   return user;
 }
 
+export async function toggleAllowChooseBarber(value: boolean) {
+  const admin = await verifyAdminAccess();
+  
+  await prisma.tenant.update({
+    where: { id: admin.tenantId! },
+    data: { allowChooseBarber: value }
+  });
+  revalidatePath("/tenant/team");
+}
+
 export async function toggleMemberActive(memberId: string, current: boolean) {
   const admin = await verifyAdminAccess();
   

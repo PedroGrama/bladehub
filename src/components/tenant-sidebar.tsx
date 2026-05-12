@@ -30,10 +30,7 @@ export function TenantSidebar({
   const pathname = usePathname();
 
   const toggle = () => setIsOpen(!isOpen);
-  const isActive = (path: string) => {
-    if (path === "/tenant") return pathname === "/tenant";
-    return pathname === path || pathname?.startsWith(`${path}/`);
-  };
+  const isActive = (path: string) => pathname === path;
 
   const handleZoom = (delta: number) => {
     const newZoom = Math.min(Math.max(zoom + delta, 80), 150);

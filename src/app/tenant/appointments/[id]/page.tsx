@@ -5,6 +5,34 @@ import { AppointmentWorkflow } from "./AppointmentWorkflow";
 import { getStatusLabel } from "@/lib/labels";
 import { BackButton } from "@/components/BackButton";
 
+// Helper function to serialize Decimal values
+function serializeAppointmentData(data: any) {
+  return {
+    ...data,
+    scheduledStart: data.scheduledStart.toISOString(),
+    scheduledEnd: data.scheduledEnd.toISOString(),
+    pricingOriginal: data.pricingOriginal.toString(),
+    discountApplied: data.discountApplied.toString(),
+    pricingFinal: data.pricingFinal.toString(),
+    items: data.items.map((item: any) => ({
+      ...item,
+      unitPriceSnapshot: item.unitPriceSnapshot.toString(),
+    })),
+  };
+}
+
+function serializeService(service: any) {
+  return {
+    ...service,
+    basePrice: service.basePrice.toString(),
+  };
+}
+
+function serializePixKey(pixKey: any) {
+  if (!pixKey) return null;
+  return pixKey;
+}
+
 export default async function AppointmentDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const user = await getSessionUser();
@@ -37,6 +65,11 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
     where: { tenantId: user.tenantId, isBarber: true, isActive: true, deletedAt: null },
     select: { id: true, name: true }
   });
+
+  // Serialize data for client component
+  const serializedAppointment = serializeAppointmentData(appointment);
+  const serializedServices = services.map(serializeService);
+  const serializedPixKey = serializePixKey(pixKey);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -74,9 +107,9 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
         <div className="md:col-span-2">
           <div className="bg-white dark:bg-zinc-900 border dark:border-zinc-800 p-6 rounded-2xl shadow-sm min-h-[400px]">
              <AppointmentWorkflow 
-               appointment={appointment} 
-               tenantServices={services} 
-               pixKey={pixKey}
+               appointment={serializedAppointment} 
+               tenantServices={serializedServices} 
+               pixKey={serializedPixKey}
                currentUserId={user.id}
                barbersList={barbers}
              />
