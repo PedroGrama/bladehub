@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { AppointmentWorkflow } from "./AppointmentWorkflow";
 import { getStatusLabel } from "@/lib/labels";
 import { BackButton } from "@/components/BackButton";
+import { getLoyaltyProgress } from "@/server/loyalty/getLoyaltyProgress";
+import { normalizePhoneDigits } from "@/lib/phoneDigits";
 
 function serializeValue(value: any): any {
   if (value === null || value === undefined) return value;
@@ -40,20 +42,51 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
 
   const appointment = await prisma.appointment.findFirst({
     where: { id: resolvedParams.id, tenantId: user.tenantId },
-    include: {
-      client: true,
-      barber: true,
+    select: {
+      id: true,
+      tenantId: true,
+      barberId: true,
+      clientId: true,
+      scheduledStart: true,
+      status: true,
+      clientConfirmedAt: true,
+      pricingFinal: true,
+      origin: true,
+      discountApplied: true,
+      consentAccepted: true,
+      consentAcceptedAt: true,
+      pricingOriginal: true,
+      notes: true,
+      createdAt: true,
+      client: {
+        select: { id: true, name: true, phone: true }
+      },
+      barber: {
+        select: { id: true, name: true }
+      },
       items: {
-        include: { service: true }
+        select: {
+          id: true,
+          nameSnapshot: true,
+          durationMinutesSnapshot: true,
+          unitPriceSnapshot: true,
+          quantity: true,
+          serviceId: true,
+        }
       }
     }
   });
 
   if (!appointment) return notFound();
 
-  // Load tenant services for the Review Screen
   const services = await prisma.service.findMany({
-    where: { tenantId: user.tenantId, isActive: true }
+    where: { tenantId: user.tenantId, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      basePrice: true,
+      durationMinutes: true,
+    }
   });
 
   // Próximos agendamentos do mesmo barbeiro
@@ -80,6 +113,12 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
     where: { tenantId: user.tenantId, isBarber: true, isActive: true, deletedAt: null },
     select: { id: true, name: true }
   });
+
+  // Load loyalty progress
+  const loyaltyProgress = appointment.client
+    ? await getLoyaltyProgress(user.tenantId, appointment.client.phone)
+    : null;
+
 
   // Serialize data for client component
   const serializedAppointment = serializeAppointmentData(appointment);
@@ -129,6 +168,7 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
                currentUserId={user.id}
                barbersList={barbers}
                upcomingAppointments={serializedUpcomingAppointments}
+               loyaltyProgress={loyaltyProgress}
              />
           </div>
         </div>

@@ -20,7 +20,7 @@ import {
   Clock
 } from "lucide-react";
 
-export function AppointmentWorkflow({ appointment, tenantServices, pixKey, currentUserId, tenantPlan, barbersList = [], upcomingAppointments = [] }: any) {
+export function AppointmentWorkflow({ appointment, tenantServices, pixKey, currentUserId, tenantPlan, barbersList = [], upcomingAppointments = [], loyaltyProgress = null }: any) {
   const router = useRouter();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -37,6 +37,7 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
   const [rescheduleDate, setRescheduleDate] = useState(appointment?.scheduledStart.split("T")[0] ?? "");
   const [rescheduleTime, setRescheduleTime] = useState(appointment?.scheduledStart.split("T")[1]?.slice(0,5) ?? "");
   const [rescheduleError, setRescheduleError] = useState("");
+  const [redeemReward, setRedeemReward] = useState(false);
 
   const toggleItem = (service: any) => {
     if (!service) return;
@@ -62,6 +63,8 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
   };
 
   const currentTotal = selectedItems.reduce((acc, item) => acc + (Number(item?.unitPriceSnapshot || 0) * (item?.quantity || 1)), 0);
+  const hasRewardRedeemable = loyaltyProgress?.rewardAvailable;
+  const finalTotal = redeemReward && hasRewardRedeemable ? 0 : currentTotal;
   const appointmentStart = new Date(appointment.scheduledStart);
   const diffMinutes = Math.floor((Date.now() - appointmentStart.getTime()) / 60000);
   const isLate = appointment.status === "confirmed" && diffMinutes >= 15;
@@ -83,7 +86,7 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
   const handlePayment = async (method: string) => {
     setLoading(true);
     try {
-      await registerPayment(appointment.id, method, currentTotal, pixKey?.id);
+      await registerPayment(appointment.id, method, finalTotal, pixKey?.id);
       toast("Pagamento registrado com sucesso!", "success");
       router.push("/tenant");
     } catch(e: any) {
@@ -182,7 +185,7 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
               <CheckCircle2 className="w-10 h-10" />
             </div>
             <h2 className="text-3xl font-bold mb-2 text-white">Serviço Concluído!</h2>
-            <p className="text-zinc-500 mb-6">O pagamento de <span className="text-white font-bold">R$ {currentTotal.toFixed(2)}</span> foi registrado com sucesso.</p>
+            <p className="text-zinc-500 mb-6">O pagamento de <span className="text-white font-bold">R$ {finalTotal.toFixed(2)}</span> foi registrado com sucesso.</p>
             
             <div className="mb-8 p-4 rounded-2xl bg-zinc-900 border border-white/5 text-left">
               <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">Profissional Responsável</label>
@@ -230,13 +233,13 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
               <QrCode className="w-6 h-6 text-blue-400" /> Recebimento
             </h2>
             
-            <div className="bg-zinc-900 border border-white/5 p-6 rounded-3xl mb-8 flex justify-between items-center">
+            <div className="bg-white dark:bg-zinc-900 border dark:border-white/5 border-zinc-200 p-6 rounded-3xl mb-8 flex justify-between items-center">
               <div>
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Total Confirmado</p>
-                <p className="text-4xl font-extrabold text-white tracking-tight">R$ {currentTotal.toFixed(2)}</p>
+                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1">Total Confirmado</p>
+                <p className="text-4xl font-extrabold text-zinc-900 dark:text-white tracking-tight">R$ {currentTotal.toFixed(2)}</p>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-                <ShoppingBag className="w-6 h-6 text-blue-400" />
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 dark:bg-blue-500/10 flex items-center justify-center">
+                <ShoppingBag className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
 
@@ -250,6 +253,31 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
                 />
               </div>
               <div className="space-y-4">
+                {hasRewardRedeemable && (
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={redeemReward}
+                        onChange={(e) => setRedeemReward(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded accent-emerald-600"
+                      />
+                      <div className="text-sm">
+                        <p className="font-bold text-emerald-900 dark:text-emerald-100">🎁 Resgatar Recompensa</p>
+                        <p className="text-xs text-emerald-700 dark:text-emerald-200 mt-1">O cliente completou {loyaltyProgress?.completed} ciclos. Resgate a recompensa sem cobrar neste atendimento.</p>
+                        {redeemReward && (
+                          <p className="text-xs font-bold text-emerald-600 dark:text-emerald-300 mt-2">✓ Recompensa será aplicada - Cliente não será cobrado</p>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                )}
+
+                <div className="bg-zinc-900 dark:bg-zinc-800 rounded-2xl p-4 border border-zinc-700">
+                  <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Total a Cobrar</p>
+                  <p className="text-3xl font-extrabold text-white">R$ {finalTotal.toFixed(2)}</p>
+                </div>
+ 
                  <button 
                    disabled={loading} 
                    onClick={() => handlePayment("PIX_DIRECT")} 

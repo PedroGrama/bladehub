@@ -7,12 +7,14 @@ export default async function ServicesPage() {
   const user = await getSessionUser();
   if (!user || (!user.tenantId && user.role !== "admin_geral")) redirect("/login");
 
-  if (!user.tenantId) {
+  const tenantId = typeof user.tenantId === "string" && user.tenantId.trim() ? user.tenantId : null;
+  if (!tenantId) {
     return <div className="p-6">Por favor, selecione uma barbearia primeiro.</div>;
   }
 
+  const tenantIdString = tenantId;
   const rawServices = await prisma.service.findMany({
-    where: { tenantId: user.tenantId }
+    where: { tenantId: tenantIdString }
   });
 
   const services = rawServices
@@ -31,7 +33,7 @@ export default async function ServicesPage() {
         Gerencie os serviços oferecidos e os preços base. Estes são os serviços que seus clientes poderão selecionar.
       </p>
 
-      <ServicesList tenantId={user.tenantId} initialServices={services} />
+      <ServicesList tenantId={tenantIdString} initialServices={services} />
     </div>
   );
 }

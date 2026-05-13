@@ -33,20 +33,21 @@ export function buildSealMessage(params: {
 }): string {
   const { clientName, sealNumber, goal, rewardDesc, txSignature } = params;
   const g = Math.max(1, goal);
-  const s = Math.min(sealNumber, g);
-  const filled = "🟫".repeat(s);
-  const empty = "⬜".repeat(Math.max(0, g - s));
+  const currentCycle = sealNumber === 0 ? 0 : sealNumber % g === 0 ? g : sealNumber % g;
+  const filled = "🟫".repeat(Math.min(currentCycle, g));
+  const empty = "⬜".repeat(Math.max(0, g - currentCycle));
+  const nextCycleProgress = sealNumber > g ? sealNumber % g : 0;
 
   const rewardBlock =
     sealNumber >= g
-      ? `🎉 Parabéns! Você ganhou: ${rewardDesc}! Mostre essa mensagem na próxima visita.`
-      : `Faltam apenas ${g - sealNumber} corte(s) para ganhar ${rewardDesc}!`;
+      ? `🎉 Parabéns! Você ganhou: ${rewardDesc}! Mostre essa mensagem na próxima visita.${nextCycleProgress > 0 ? `\nSeu próximo ciclo de selos começou: ${nextCycleProgress}/${g}` : ""}`
+      : `Faltam apenas ${g - currentCycle} corte(s) para ganhar ${rewardDesc}!`;
 
   return `Olá, ${clientName}! ✂️
 
 Serviço concluído com sucesso.
 
-Seus selos de fidelidade: ${sealNumber}/${g}
+Seus selos de fidelidade: ${currentCycle}/${g}
 ${filled}${empty}
 
 ${rewardBlock}

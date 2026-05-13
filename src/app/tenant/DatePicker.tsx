@@ -14,7 +14,7 @@ export function DatePicker({ initialDate }: { initialDate: string }) {
         value={initialDate}
         onChange={(value) => {
           if (value) {
-            router.push(`/tenant?date=${value}`);
+            router.replace(`/tenant?date=${encodeURIComponent(value)}`);
           }
         }}
         className="bg-transparent border-none text-sm font-bold focus:outline-none w-24 dark:text-white"

@@ -1,5 +1,6 @@
 "use server";
 
+import { PrismaClientKnownRequestError } from "@prisma/client";
 import { prisma } from "@/server/db";
 import { headers } from "next/headers";
 import { validarTelefone } from "@/lib/validations";
@@ -201,7 +202,9 @@ export async function createPublicAppointment(data: {
       return { error: "Limite de agendamentos por IP excedido. Tente novamente em 1 hora." };
     }
 
-    if (!tenantId || !clientName || !clientPhone || !dateStr || !timeStr || serviceIds.length === 0) {
+    const normalizedServiceIds = serviceIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0);
+
+    if (!tenantId || !clientName || !clientPhone || !dateStr || !timeStr || normalizedServiceIds.length === 0) {
       console.error("[createPublicAppointment] dados obrigatórios ausentes", {
         tenantId,
         clientName,
@@ -214,13 +217,19 @@ export async function createPublicAppointment(data: {
     }
 
     // 1. Get Services to calculate total time and price
-    console.log("[createPublicAppointment] Buscando serviços", { serviceIds });
+    console.log("[createPublicAppointment] Buscando serviços", { serviceIds: normalizedServiceIds });
     const services = await prisma.service.findMany({
-      where: { id: { in: serviceIds }, tenantId }
+      where: { id: { in: normalizedServiceIds }, tenantId },
+      select: {
+        id: true,
+        name: true,
+        durationMinutes: true,
+        basePrice: true,
+      },
     });
 
-    if (services.length !== serviceIds.length) {
-      console.warn("[createPublicAppointment] Alguns serviços não foram encontrados", { found: services.length, requested: serviceIds.length });
+    if (services.length !== normalizedServiceIds.length) {
+      console.warn("[createPublicAppointment] Alguns serviços não foram encontrados", { found: services.length, requested: normalizedServiceIds.length });
       return { error: "Alguns serviços selecionados não estão disponíveis." };
     }
 
@@ -435,11 +444,15 @@ export async function createPublicAppointment(data: {
       message,
       code,
       stack,
-      input: data
+      input: data,
     });
 
-    const detailed = message ? `Erro ao criar agendamento: ${message}` : "Erro interno ao processar agendamento.";
-    return { error: detailed };
+    const isPrismaError = error instanceof PrismaClientKnownRequestError;
+    const friendly = isPrismaError
+      ? "Não foi possível processar seu agendamento agora. Tente novamente em alguns instantes."
+      : "Ocorreu um erro inesperado ao criar seu agendamento. Tente novamente.";
+
+    return { error: friendly };
   }
 }
 

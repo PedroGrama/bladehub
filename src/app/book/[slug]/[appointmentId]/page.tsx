@@ -8,23 +8,41 @@ export default async function AppointmentTrackingPage({ params }: { params: Prom
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: {
-      tenant: true,
+      client: true,
       barber: true,
-      items: { include: { service: true } }
-    }
+    },
   });
 
-  if (!appointment || appointment.tenant.slug !== slug) return notFound();
+  if (!appointment) return notFound();
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: appointment.tenantId },
+    select: { slug: true, name: true },
+  });
+
+  if (!tenant || tenant.slug !== slug) return notFound();
+
+  const barber = await prisma.user.findUnique({
+    where: { id: appointment.barberId },
+    select: { name: true },
+  });
+
+  const items = await prisma.appointmentItem.findMany({
+    where: { appointmentId: appointment.id },
+    select: { nameSnapshot: true },
+  });
 
   const apptData = {
     id: appointment.id,
     scheduledStart: appointment.scheduledStart.toISOString(),
     status: appointment.status,
     checkedIn: !!appointment.clientConfirmedAt,
-    tenantName: appointment.tenant.name,
-    barberName: appointment.barber.name,
+    tenantName: tenant.name,
+    barberName: barber?.name ?? "Profissional indisponível",
+    clientName: appointment.client.name,
+    clientPhone: appointment.client.phone,
     totalPrice: Number(appointment.pricingFinal),
-    services: appointment.items.map(i => i.nameSnapshot).join(", ")
+    services: items.map((i) => i.nameSnapshot).join(", "),
   };
 
   return (

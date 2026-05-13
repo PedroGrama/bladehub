@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ToastProvider";
 
 type Props = {
   tenantId: string;
@@ -36,8 +37,9 @@ export function LoyaltyWhatsappSettings({
   evolutionInstanceName: initialEvName,
   evolutionConnected: initialEvConn,
 }: Props) {
+  const { toast } = useToast();
   const [enabled, setEnabled] = useState(initialEnabled);
-  const [goal, setGoal] = useState(initialGoal);
+  const [goal, setGoal] = useState(initialGoal && initialGoal >= 2 && initialGoal <= 30 ? initialGoal : 10);
   const [reward, setReward] = useState(initialReward ?? "Corte grátis");
   const [solPk, setSolPk] = useState(initialPk);
   const [evName, setEvName] = useState(initialEvName ?? "");
@@ -46,14 +48,17 @@ export function LoyaltyWhatsappSettings({
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const savePatch = async (body: Record<string, unknown>) => {
+  const savePatch = async (body: Record<string, unknown>, successMessage = "Salvo.") => {
     setLoading(true);
     setMsg(null);
     try {
       await patchTenant(tenantId, body);
-      setMsg("Salvo.");
+      setMsg(successMessage);
+      toast(successMessage, "success");
     } catch (e: unknown) {
-      setMsg(e instanceof Error ? e.message : "Erro");
+      const message = e instanceof Error ? e.message : "Erro";
+      setMsg(message);
+      toast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -71,9 +76,13 @@ export function LoyaltyWhatsappSettings({
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || "Falha");
       setSolPk(j.publicKey as string);
-      setMsg("Carteira gerada. Guarde bem: chaves ficam no servidor (em produção devem ser criptografadas).");
+      const successMessage = "Carteira gerada com sucesso.";
+      setMsg(successMessage);
+      toast(successMessage, "success");
     } catch (e: unknown) {
-      setMsg(e instanceof Error ? e.message : "Erro");
+      const message = e instanceof Error ? e.message : "Erro";
+      setMsg(message);
+      toast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -91,9 +100,15 @@ export function LoyaltyWhatsappSettings({
         (typeof j?.base64 === "string" && j.base64) ||
         null;
       setQrBase64(b64);
-      if (!b64) setMsg("Resposta da Evolution sem base64 de QR; verifique a versão da API.");
+      if (!b64) {
+        const message = "Resposta da Evolution sem base64 de QR; verifique a versão da API.";
+        setMsg(message);
+        toast(message, "error");
+      }
     } catch (e: unknown) {
-      setMsg(e instanceof Error ? e.message : "Erro");
+      const message = e instanceof Error ? e.message : "Erro";
+      setMsg(message);
+      toast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -128,10 +143,10 @@ export function LoyaltyWhatsappSettings({
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-xs font-semibold uppercase text-zinc-500">Meta de selos (3–30)</label>
+            <label className="text-xs font-semibold uppercase text-zinc-500">Meta de selos (2–30)</label>
             <input
               type="number"
-              min={3}
+              min={2}
               max={30}
               value={goal}
               onChange={(e) => setGoal(Number(e.target.value))}
@@ -140,7 +155,13 @@ export function LoyaltyWhatsappSettings({
             <button
               type="button"
               disabled={loading}
-              onClick={() => savePatch({ loyaltySealGoal: goal })}
+              onClick={() => {
+                if (goal < 2 || goal > 30) {
+                  toast("A meta de selos deve estar entre 2 e 30.", "error");
+                  return;
+                }
+                void savePatch({ loyaltySealGoal: goal }, "Meta salva com sucesso.");
+              }}
               className="mt-2 text-xs font-semibold text-blue-600 hover:underline"
             >
               Salvar meta

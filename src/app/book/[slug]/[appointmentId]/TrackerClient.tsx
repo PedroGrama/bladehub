@@ -42,6 +42,8 @@ export function TrackerClient({ appointment, slug }: { appointment: any, slug: s
         📅
       </div>
       <h1 className="text-2xl font-bold mb-1">Agendamento em {appointment.tenantName}</h1>
+      <p className="text-zinc-500 mb-2 font-medium">Cliente: {appointment.clientName}</p>
+      <p className="text-zinc-500 mb-6 text-sm">Telefone: {appointment.clientPhone}</p>
       <p className="text-zinc-500 mb-6 font-medium">Com: {appointment.barberName}</p>
 
       <div className="bg-zinc-50 dark:bg-zinc-950 border dark:border-zinc-800 rounded-2xl p-4 mb-6 text-left">

@@ -6,13 +6,17 @@ import { useRouter } from "next/navigation";
 import { validarTelefone, formatarTelefone } from "@/lib/validations";
 import { useToast } from "@/components/ToastProvider";
 
-export function WalkinForm({ tenantId, services, barbers, currentUserId, isAdmin }: any) {
+export function WalkinForm({ tenantId, services, barbers, currentUserId, isAdmin, initialDate }: any) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(
+    initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) 
+      ? initialDate 
+      : new Date().toISOString().split('T')[0]
+  );
   const [time, setTime] = useState("");
   const [barberId, setBarberId] = useState(isAdmin ? "" : currentUserId);
   const [clientName, setClientName] = useState("");

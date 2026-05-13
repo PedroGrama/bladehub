@@ -44,7 +44,7 @@ export async function runLoyaltySealForAppointment(appointmentId: string): Promi
   await getOrCreateClientWallet(tenant.id, clientPhone);
 
   const sealCount = await prisma.loyaltySeal.count({
-    where: { tenantId: tenant.id, clientPhone },
+    where: { tenantId: tenant.id, clientPhone, sealNumber: { gt: 0 } },
   });
   const sealNumber = sealCount + 1;
   const tenantSlug = tenant.slug || tenant.id.slice(0, 8);
@@ -79,6 +79,7 @@ export async function runLoyaltySealForAppointment(appointmentId: string): Promi
     }),
   ]);
 
+  const isRewardComplete = tenant.loyaltySealGoal > 0 && sealNumber % tenant.loyaltySealGoal === 0;
   if (tenant.evolutionInstanceName && tenant.evolutionConnected) {
     try {
       await sendWhatsAppMessage(
@@ -94,6 +95,18 @@ export async function runLoyaltySealForAppointment(appointmentId: string): Promi
       );
     } catch (e) {
       console.error("[runLoyaltySealForAppointment] WhatsApp failed", e);
+    }
+
+    if (isRewardComplete && tenant.phone) {
+      try {
+        await sendWhatsAppMessage(
+          tenant.evolutionInstanceName,
+          tenant.phone,
+          `O cliente ${appointment.client.name} alcançou ${tenant.loyaltySealGoal} selos e ganhou ${tenant.loyaltyRewardDesc ?? "a recompensa"}. Prepare o brinde para a próxima visita.`
+        );
+      } catch (e) {
+        console.error("[runLoyaltySealForAppointment] WhatsApp professional notification failed", e);
+      }
     }
   }
 

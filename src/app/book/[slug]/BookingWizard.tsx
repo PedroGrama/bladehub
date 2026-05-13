@@ -7,9 +7,30 @@ import { BookingSlotPicker } from "@/components/BookingSlotPicker";
 import { TermsModal } from "@/components/booking/TermsModal";
 
 type BookingWizardProps = {
-  tenant: { id: string; name: string; slug: string; logoUrl: string | null; allowChooseBarber: boolean };
+  tenant: {
+    id: string;
+    name: string;
+    slug: string;
+    logoUrl: string | null;
+    allowChooseBarber: boolean;
+    loyaltySealsEnabled: boolean;
+  };
   services: { id: string; name: string; basePrice: number; durationMinutes: number }[];
   barbers: { id: string; name: string }[];
+};
+
+type LoyaltyProgress = {
+  loyaltySealsEnabled: boolean;
+  goal: number;
+  total: number;
+  current: number;
+  completed: number;
+  remaining: number;
+  rewardAvailable: boolean;
+  rewardDesc: string | null;
+  walletPublicKey: string | null;
+  lastTxSignature: string | null;
+  hasHistory: boolean;
 };
 
 export function BookingWizard({ tenant, services, barbers }: BookingWizardProps) {
@@ -25,6 +46,9 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [loyaltyProgress, setLoyaltyProgress] = useState<LoyaltyProgress | null>(null);
+  const [loyaltyChecked, setLoyaltyChecked] = useState(false);
+  const [checkingLoyalty, setCheckingLoyalty] = useState(false);
   const router = useRouter();
 
   const totalDurationMinutes = Array.from(selectedServices).reduce((acc, id) => {
@@ -52,6 +76,28 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
     else if (val.length >= 10) val = val.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
     else if (val.length > 2) val = val.replace(/(\d{2})(\d+)/, "($1) $2");
     setClientPhone(val);
+  };
+
+  const handlePhoneBlur = async () => {
+    setLoyaltyChecked(true);
+    setLoyaltyProgress(null);
+    if (!tenant.loyaltySealsEnabled) return;
+    const phoneDigits = clientPhone.replace(/\D/g, "");
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) return;
+
+    setCheckingLoyalty(true);
+    try {
+      const res = await fetch(`/api/loyalty/progress?tenantId=${tenant.id}&phone=${encodeURIComponent(phoneDigits)}`);
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        return;
+      }
+      setLoyaltyProgress(json);
+    } catch (err) {
+      console.error("Erro ao buscar fidelidade", err);
+    } finally {
+      setCheckingLoyalty(false);
+    }
   };
 
   const toggleService = (id: string) => {
@@ -168,10 +214,36 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
                 required
                 value={clientPhone}
                 onChange={handlePhoneChange}
+                onBlur={handlePhoneBlur}
                 placeholder="(11) 99999-9999"
                 className="w-full rounded-xl border px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
               />
             </div>
+
+            {tenant.loyaltySealsEnabled && (
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                {!loyaltyChecked ? (
+                  <p>Digite o telefone e saia do campo para verificar o histórico de selos.</p>
+                ) : checkingLoyalty ? (
+                  <p>Buscando histórico de fidelidade...</p>
+                ) : loyaltyProgress?.hasHistory ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Programa de fidelidade ativado</p>
+                    <p>
+                      <span className="font-semibold">{loyaltyProgress.total}</span> selos registrados / meta de <span className="font-semibold">{loyaltyProgress.goal}</span>
+                    </p>
+                    <p>{loyaltyProgress.rewardDesc}</p>
+                    {loyaltyProgress.rewardAvailable ? (
+                      <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                        <span>🎁 Recompensa disponível</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">Faltam <span className="font-semibold">{loyaltyProgress.remaining}</span> selos para a próxima recompensa.</p>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {tenant.allowChooseBarber && (
               <div>

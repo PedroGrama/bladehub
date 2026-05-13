@@ -2,8 +2,9 @@ import Link from "next/link";
 import { getSessionUser } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { redirect } from "next/navigation";
-import { Calendar, Plus, CreditCard, ChevronRight, User, Clock as ClockIcon, TrendingUp } from "lucide-react";
+import { Calendar, Plus, CreditCard, ChevronRight, User, Clock as ClockIcon, TrendingUp, Gift } from "lucide-react";
 import { DatePicker } from "./DatePicker";
+import { normalizePhoneDigits } from "@/lib/phoneDigits";
 
 export default async function TenantHome({ searchParams }: { searchParams: Promise<{ date?: string; period?: string }> }) {
   const { date, period } = await searchParams;
@@ -49,6 +50,45 @@ export default async function TenantHome({ searchParams }: { searchParams: Promi
     include: { client: true, barber: true },
     take: 50,
   });
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: user.tenantId },
+    select: {
+      loyaltySealsEnabled: true,
+      loyaltySealGoal: true,
+    },
+  });
+
+  const loyaltySummary = {} as Record<
+    string,
+    { total: number; rewardAvailable: boolean }
+  >;
+
+  if (tenant?.loyaltySealsEnabled && appointments.length > 0) {
+    const clientPhones = Array.from(
+      new Set(appointments.map((appointment) => normalizePhoneDigits(appointment.client.phone)))
+    );
+
+    if (clientPhones.length > 0) {
+      const groups = await prisma.loyaltySeal.groupBy({
+        by: ["clientPhone"],
+        where: {
+          tenantId: user.tenantId,
+          clientPhone: { in: clientPhones },
+          sealNumber: { gt: 0 },
+        },
+        _count: { _all: true },
+      });
+
+      for (const group of groups) {
+        loyaltySummary[group.clientPhone] = {
+          total: group._count._all,
+          rewardAvailable:
+            group._count._all > 0 && tenant.loyaltySealGoal > 0 && group._count._all % tenant.loyaltySealGoal === 0,
+        };
+      }
+    }
+  }
 
   const dateStr = formatLocalDate(selectedDate);
 
@@ -146,6 +186,19 @@ export default async function TenantHome({ searchParams }: { searchParams: Promi
                         <div className="flex flex-col">
                           <span className="text-sm font-extrabold text-zinc-900 dark:text-white tracking-tight">{a.client.name}</span>
                           <span className="text-[10px] font-medium text-zinc-500">Agendado agora</span>
+                          {tenant?.loyaltySealsEnabled && (
+                            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-[10px] text-zinc-600 dark:bg-white/5 dark:text-zinc-300">
+                              <Gift className="w-3 h-3" />
+                              {loyaltySummary[normalizePhoneDigits(a.client.phone)] ? (
+                                <>
+                                  Selos: {loyaltySummary[normalizePhoneDigits(a.client.phone)].total}/{tenant.loyaltySealGoal}
+                                  {loyaltySummary[normalizePhoneDigits(a.client.phone)].rewardAvailable && " • Recompensa pronta"}
+                                </>
+                              ) : (
+                                <>Sem selos registrados</>
+                              )}
+                            </span>
+                          )}
                         </div>
                       </td>
                       {isAdmin && (
@@ -207,6 +260,19 @@ export default async function TenantHome({ searchParams }: { searchParams: Promi
                       <div className="flex flex-col">
                         <span className="text-sm font-black text-zinc-900 dark:text-white">{a.client.name}</span>
                         {isAdmin && <span className="text-[10px] text-zinc-500 font-medium">{a.barber.name}</span>}
+                        {tenant?.loyaltySealsEnabled && (
+                          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-[10px] text-zinc-600 dark:bg-white/5 dark:text-zinc-300">
+                            <Gift className="w-3 h-3" />
+                            {loyaltySummary[normalizePhoneDigits(a.client.phone)] ? (
+                              <>
+                                Selos: {loyaltySummary[normalizePhoneDigits(a.client.phone)].total}/{tenant.loyaltySealGoal}
+                                {loyaltySummary[normalizePhoneDigits(a.client.phone)].rewardAvailable && " • Recompensa pronta"}
+                              </>
+                            ) : (
+                              <>Sem selos registrados</>
+                            )}
+                          </span>
+                        )}
                       </div>
                       <Link
                         href={`/tenant/appointments/${a.id}`}

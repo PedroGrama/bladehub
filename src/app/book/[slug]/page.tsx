@@ -6,17 +6,32 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
 
-  const tenant = await prisma.tenant.findFirst({
-    where: { slug: slug, isActive: true },
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug },
     include: {
-      services: { where: { isActive: true } },
-      users: { where: { isBarber: true, isActive: true, deletedAt: null }, select: { id: true, name: true } },
       businessHours: true,
-      barberBusinessHours: { where: { isClosed: false } }
-    }
+      barberBusinessHours: true,
+    },
   });
 
-  if (!tenant) return notFound();
+  if (!tenant || !tenant.isActive) return notFound();
+
+  const rawServices = await prisma.service.findMany({
+    where: { tenantId: tenant.id, isActive: true },
+    select: { id: true, name: true, basePrice: true, durationMinutes: true },
+  });
+
+  const services = rawServices
+    .map((s) => ({
+      ...s,
+      basePrice: Number(s.basePrice),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const barbers = await prisma.user.findMany({
+    where: { tenantId: tenant.id, isBarber: true, isActive: true, deletedAt: null },
+    select: { id: true, name: true },
+  });
 
   // Strip complex relational data to simple POJOs down to client
   const pojoTenant = {
@@ -24,20 +39,9 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
     name: tenant.name,
     slug: tenant.slug || "",
     logoUrl: tenant.logoUrl,
-    allowChooseBarber: tenant.allowChooseBarber
+    allowChooseBarber: tenant.allowChooseBarber,
+    loyaltySealsEnabled: tenant.loyaltySealsEnabled,
   };
-
-  const services = tenant.services.map(s => ({
-    id: s.id,
-    name: s.name,
-    basePrice: Number(s.basePrice),
-    durationMinutes: s.durationMinutes
-  }));
-
-  const barbers = tenant.users.map(u => ({
-    id: u.id,
-    name: u.name
-  }));
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 p-4 md:p-8 flex items-center justify-center">
