@@ -12,14 +12,17 @@ export default async function ServicesPage() {
   }
 
   const rawServices = await prisma.service.findMany({
-    where: { tenantId: user.tenantId, isActive: true },
-    orderBy: { name: "asc" }
+    where: { tenantId: user.tenantId }
   });
 
-  const services = rawServices.map(s => ({
-    ...s,
-    basePrice: Number(s.basePrice)
-  }));
+  const services = rawServices
+    .filter((s) => s.isActive)
+    .map(s => ({
+      ...s,
+      basePrice: Number(s.basePrice),
+      displayOrder: s.displayOrder ?? 0
+    }))
+    .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { updateAppointmentStatus, finalizeReview, registerPayment, repassAppointment, updateAppointmentBarber, validateAndAddService } from "./actions";
+import { updateAppointmentStatus, finalizeReview, registerPayment, repassAppointment, updateAppointmentBarber, validateAndAddService, cancelAppointment, markNoShow, rescheduleAppointment } from "./actions";
 import { useToast } from "@/components/ToastProvider";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { 
@@ -20,7 +20,7 @@ import {
   Clock
 } from "lucide-react";
 
-export function AppointmentWorkflow({ appointment, tenantServices, pixKey, currentUserId, barbersList = [] }: any) {
+export function AppointmentWorkflow({ appointment, tenantServices, pixKey, currentUserId, tenantPlan, barbersList = [], upcomingAppointments = [] }: any) {
   const router = useRouter();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -29,6 +29,14 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
   const [isReviewing, setIsReviewing] = useState(false);
   const [selectedItems, setSelectedItems] = useState<any[]>(appointment?.items || []);
   const [selectedBarberId, setSelectedBarberId] = useState(appointment?.barberId);
+  const [showAbortModal, setShowAbortModal] = useState(false);
+  const [showServiceSuggestions, setShowServiceSuggestions] = useState(false);
+  const [abortReason, setAbortReason] = useState("");
+  const [abortMode, setAbortMode] = useState<"cancel" | "no_show">("cancel");
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState(appointment?.scheduledStart.split("T")[0] ?? "");
+  const [rescheduleTime, setRescheduleTime] = useState(appointment?.scheduledStart.split("T")[1]?.slice(0,5) ?? "");
+  const [rescheduleError, setRescheduleError] = useState("");
 
   const toggleItem = (service: any) => {
     if (!service) return;
@@ -54,6 +62,11 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
   };
 
   const currentTotal = selectedItems.reduce((acc, item) => acc + (Number(item?.unitPriceSnapshot || 0) * (item?.quantity || 1)), 0);
+  const appointmentStart = new Date(appointment.scheduledStart);
+  const diffMinutes = Math.floor((Date.now() - appointmentStart.getTime()) / 60000);
+  const isLate = appointment.status === "confirmed" && diffMinutes >= 15;
+  const hasActiveSubscription = tenantPlan && tenantPlan !== "TESTE_GRATIS";
+  const canReschedule = currentUserId === appointment.barberId && hasActiveSubscription;
 
   const handleFinishReview = async () => {
     setLoading(true);
@@ -72,7 +85,7 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
     try {
       await registerPayment(appointment.id, method, currentTotal, pixKey?.id);
       toast("Pagamento registrado com sucesso!", "success");
-      setStatus("done");
+      router.push("/tenant");
     } catch(e: any) {
        toast(e.message, "error");
     }
@@ -104,7 +117,54 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
     setLoading(false);
   };
 
-  const cardBase = "w-full max-w-xl bg-white dark:bg-zinc-950 border dark:border-zinc-800 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden";
+  const handleAbortSubmit = async () => {
+    if (abortReason.trim().length < 7) {
+      toast("A justificativa deve ter pelo menos 7 caracteres.", "error");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (abortMode === "no_show") {
+        await markNoShow(appointment.id, abortReason);
+        setStatus("no_show");
+        toast("Falta registrada com sucesso.", "success");
+      } else {
+        await cancelAppointment(appointment.id, abortReason);
+        setStatus("cancelled");
+        toast("Atendimento cancelado com sucesso.", "success");
+      }
+      setShowAbortModal(false);
+    } catch (e: any) {
+      toast(e.message, "error");
+    }
+    setLoading(false);
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleDate || !rescheduleTime) {
+      setRescheduleError("Escolha data e horário.");
+      return;
+    }
+    if (abortReason.trim().length < 7) {
+      setRescheduleError("A justificativa deve ter pelo menos 7 caracteres.");
+      return;
+    }
+
+    setLoading(true);
+    setRescheduleError("");
+    try {
+      await rescheduleAppointment(appointment.id, rescheduleDate, rescheduleTime, abortReason);
+      toast("Agendamento reagendado com sucesso.", "success");
+      setShowRescheduleModal(false);
+    } catch (e: any) {
+      setRescheduleError(e.message);
+    }
+    setLoading(false);
+  };
+
+  const cardBase = "w-full max-w-xl bg-white dark:bg-zinc-950 border dark:border-zinc-800 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden text-zinc-900 dark:text-white";
+  const hasUpcoming = Array.isArray(upcomingAppointments) && upcomingAppointments.length > 0;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
@@ -298,6 +358,25 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
               <p className="text-zinc-500 text-xs">O cronômetro está rodando.</p>
             </div>
 
+            {hasUpcoming && (
+              <div className="space-y-3 mb-8 rounded-3xl border border-white/10 bg-zinc-900/70 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Próximos clientes</span>
+                  <span className="text-[10px] font-bold text-zinc-400">{upcomingAppointments.length} próximos</span>
+                </div>
+                <div className="space-y-2">
+                  {upcomingAppointments.map((item: any) => (
+                    <div key={item.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-950/80 p-3">
+                      <div>
+                        <p className="text-sm font-bold text-white">{item.client?.name || "Cliente"}</p>
+                        <p className="text-[11px] text-zinc-400">{new Date(item.scheduledStart).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      <span className="text-xs uppercase tracking-[0.2em] text-zinc-500">{item.status === 'confirmed' ? 'Agendado' : item.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="space-y-4 mb-8">
                <div className="flex items-center justify-between px-2">
                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Serviços em Execução</h3>
@@ -319,31 +398,55 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
                </div>
 
                <div className="pt-4 border-t border-white/5">
-                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-3 px-2">Incluir Novo Serviço</h3>
-                 <div className="grid grid-cols-1 gap-2">
-                    {tenantServices
-                      .filter((s: any) => !appointment.items.some((i: any) => i.serviceId === s.id))
-                      .map((s: any) => (
-                        <button
-                          key={s.id}
-                          disabled={loading}
-                          onClick={async () => {
-                            setLoading(true);
-                            try {
-                              await validateAndAddService(appointment.id, s.id);
-                              toast(`Serviço ${s.name} adicionado com sucesso!`, "success");
-                            } catch(e: any) {
-                              toast(e.message, "error");
-                            }
-                            setLoading(false);
-                          }}
-                          className="flex items-center justify-between p-3 rounded-2xl bg-zinc-900 border border-white/5 hover:border-blue-500/30 transition-all text-left group"
-                        >
-                          <span className="text-xs font-bold text-zinc-400 group-hover:text-white transition-colors">{s.name}</span>
-                          <Plus className="w-4 h-4 text-zinc-600 group-hover:text-blue-500 transition-colors" />
-                        </button>
-                    ))}
+                 <div className="flex items-center justify-between gap-4 mb-3 px-2">
+                   <div>
+                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Adicionar Serviços</h3>
+                     <p className="text-xs text-zinc-400">Sugestão de serviço durante o atendimento.</p>
+                   </div>
+                   <button
+                     type="button"
+                     onClick={() => setShowServiceSuggestions((current) => !current)}
+                     className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-[11px] font-bold text-white hover:bg-blue-500 transition"
+                   >
+                     <Plus className="w-4 h-4" /> Adicionar serviço
+                   </button>
                  </div>
+
+                 {showServiceSuggestions ? (
+                   <div className="space-y-2 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+                     {tenantServices
+                       .filter((s: any) => !appointment.items.some((i: any) => i.serviceId === s.id))
+                       .map((s: any) => (
+                         <button
+                           key={s.id}
+                           disabled={loading}
+                           onClick={async () => {
+                             setLoading(true);
+                             try {
+                               await validateAndAddService(appointment.id, s.id);
+                               toast(`Serviço ${s.name} adicionado com sucesso!`, "success");
+                             } catch(e: any) {
+                               toast(e.message, "error");
+                             }
+                             setLoading(false);
+                           }}
+                           className="flex items-center justify-between p-3 rounded-2xl bg-zinc-900 border border-white/5 hover:border-blue-500/30 transition-all text-left group"
+                         >
+                           <span className="text-xs font-bold text-zinc-400 group-hover:text-white transition-colors">{s.name}</span>
+                           <Plus className="w-4 h-4 text-zinc-600 group-hover:text-blue-500 transition-colors" />
+                         </button>
+                     ))}
+                     {tenantServices.filter((s: any) => !appointment.items.some((i: any) => i.serviceId === s.id)).length === 0 && (
+                       <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-zinc-400">
+                         Todos os serviços já estão incluídos no atendimento.
+                       </div>
+                     )}
+                   </div>
+                 ) : (
+                   <div className="rounded-3xl border border-white/10 bg-blue-600/10 p-4 text-sm text-zinc-400">
+                     Clique em "Adicionar serviço" para ver sugestões de serviços para este atendimento.
+                   </div>
+                 )}
                </div>
             </div>
             
@@ -384,13 +487,42 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
               {loading ? "Iniciando..." : <>INICIAR AGORA <Play className="w-5 h-5 fill-current" /></>}
             </button>
 
-            <button 
-              disabled={loading} 
-              onClick={handleRepass} 
-              className="mt-8 text-[10px] font-bold text-zinc-600 uppercase tracking-widest hover:text-red-500 transition flex items-center justify-center gap-2 mx-auto"
-            >
-              <RotateCcw className="w-3 h-3" /> Repassar ou Cancelar
-            </button>
+            <div className="mt-6 flex flex-col gap-3 text-sm">
+              {isLate && (
+                <button
+                  disabled={loading}
+                  onClick={() => {
+                    setAbortMode("no_show");
+                    setShowAbortModal(true);
+                  }}
+                  className="w-full rounded-2xl border border-red-200 bg-red-50 text-red-600 py-3 font-bold hover:bg-red-100 transition"
+                >
+                  Marcar Falta
+                </button>
+              )}
+
+              {canReschedule && (
+                <button
+                  disabled={loading}
+                  onClick={() => {
+                    setAbortMode("cancel");
+                    setAbortReason("");
+                    setShowRescheduleModal(true);
+                  }}
+                  className="w-full rounded-2xl border border-blue-200 bg-blue-50 text-blue-700 py-3 font-bold hover:bg-blue-100 transition"
+                >
+                  Reagendar
+                </button>
+              )}
+
+              <button 
+                disabled={loading} 
+                onClick={handleRepass} 
+                className="w-full rounded-2xl border border-zinc-200 bg-zinc-100 text-zinc-700 py-3 font-bold hover:bg-zinc-200 transition flex items-center justify-center gap-2"
+              >
+                <RotateCcw className="w-3 h-3" /> Repassar ou Cancelar
+              </button>
+            </div>
           </motion.div>
         )}
 
@@ -408,6 +540,115 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
             >
               Voltar
             </button>
+          </motion.div>
+        )}
+
+        {showAbortModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          >
+            <div className="w-full max-w-xl rounded-[28px] bg-white p-6 shadow-2xl">
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <h3 className="text-xl font-black text-zinc-900">{abortMode === "no_show" ? "Marcar Falta" : "Cancelar Atendimento"}</h3>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    Informe uma justificativa com pelo menos 7 caracteres para seguir.
+                  </p>
+                </div>
+                <button onClick={() => setShowAbortModal(false)} className="text-zinc-400 hover:text-zinc-700">Fechar</button>
+              </div>
+              <textarea
+                value={abortReason}
+                onChange={(e) => setAbortReason(e.target.value)}
+                placeholder="Descreva o motivo do cancelamento/ausência"
+                className="min-h-[140px] w-full rounded-3xl border border-zinc-200 px-4 py-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowAbortModal(false)}
+                  className="rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-100 transition"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  disabled={loading || abortReason.trim().length < 7}
+                  onClick={handleAbortSubmit}
+                  className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700 transition disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? "Processando..." : abortMode === "no_show" ? "Confirmar falta" : "Confirmar cancelamento"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {showRescheduleModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          >
+            <div className="w-full max-w-xl rounded-[28px] bg-white p-6 shadow-2xl">
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <h3 className="text-xl font-black text-zinc-900">Reagendar Atendimento</h3>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    Escolha nova data e hora, e justifique a alteração no plano.
+                  </p>
+                </div>
+                <button onClick={() => setShowRescheduleModal(false)} className="text-zinc-400 hover:text-zinc-700">Fechar</button>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-zinc-700">Data</label>
+                  <input
+                    type="date"
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    className="w-full rounded-3xl border border-zinc-200 px-4 py-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-zinc-700">Hora</label>
+                  <input
+                    type="time"
+                    value={rescheduleTime}
+                    onChange={(e) => setRescheduleTime(e.target.value)}
+                    className="w-full rounded-3xl border border-zinc-200 px-4 py-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline:none focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+              </div>
+              <textarea
+                value={abortReason}
+                onChange={(e) => setAbortReason(e.target.value)}
+                placeholder="Justificativa do reagendamento (mínimo 7 caracteres)"
+                className="mt-4 min-h-[120px] w-full rounded-3xl border border-zinc-200 px-4 py-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+              {rescheduleError && <p className="mt-3 text-sm text-red-600">{rescheduleError}</p>}
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowRescheduleModal(false)}
+                  className="rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-100 transition"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  disabled={loading || abortReason.trim().length < 7}
+                  onClick={handleReschedule}
+                  className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? "Reagendando..." : "Confirmar reagendamento"}
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
 

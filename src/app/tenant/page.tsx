@@ -10,8 +10,13 @@ export default async function TenantHome({ searchParams }: { searchParams: Promi
   const user = await getSessionUser();
   if (!user || !user.tenantId) redirect("/login");
 
+  function formatLocalDate(date: Date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
   const now = new Date();
-  const selectedDate = date ? new Date(date + "T12:00:00") : now;
+  const validDate = typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "";
+  const selectedDate = validDate ? new Date(`${validDate}T12:00:00`) : now;
 
   const start = new Date(selectedDate);
   start.setHours(0, 0, 0, 0);
@@ -45,7 +50,7 @@ export default async function TenantHome({ searchParams }: { searchParams: Promi
     take: 50,
   });
 
-  const dateStr = selectedDate.toISOString().split('T')[0];
+  const dateStr = formatLocalDate(selectedDate);
 
   return (
     <main className="p-8 max-w-6xl mx-auto font-sans min-h-screen">

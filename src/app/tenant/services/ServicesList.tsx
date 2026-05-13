@@ -10,8 +10,11 @@ export function ServicesList({ tenantId, initialServices }: { tenantId: string, 
   const confirm = useConfirm();
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState<number>(0);
   const [editDuration, setEditDuration] = useState<number>(30);
+  const [editOrder, setEditOrder] = useState<number>(0);
+  const [services, setServices] = useState(() => [...initialServices].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name)));
 
   // Add Form State
   const [newName, setNewName] = useState("");
@@ -36,7 +39,17 @@ export function ServicesList({ tenantId, initialServices }: { tenantId: string, 
   async function handleSaveEdit(id: string) {
     setLoading(true);
     try {
-      await updateService(id, editPrice, editDuration);
+      await updateService(id, editName, editPrice, editDuration, editOrder);
+      setServices((current) => current.map((svc) => {
+        if (svc.id !== id) return svc;
+        return {
+          ...svc,
+          name: editName,
+          basePrice: editPrice,
+          durationMinutes: editDuration,
+          displayOrder: editOrder,
+        };
+      }).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name)));
       setEditingId(null);
     } catch (err: any) {
       toast(err.message, "error");
@@ -94,13 +107,26 @@ export function ServicesList({ tenantId, initialServices }: { tenantId: string, 
               <th className="px-5 py-3 font-medium text-zinc-500">Serviço</th>
               <th className="px-5 py-3 font-medium text-zinc-500">Duração</th>
               <th className="px-5 py-3 font-medium text-zinc-500">Preço (R$)</th>
+              <th className="px-5 py-3 font-medium text-zinc-500">Ordem</th>
               <th className="px-5 py-3 font-medium text-zinc-500 text-right">Ação</th>
             </tr>
           </thead>
           <tbody className={loading ? "opacity-50 pointer-events-none" : ""}>
-            {initialServices.map(svc => (
+            {services.map(svc => (
               <tr key={svc.id} className="border-b dark:border-zinc-800 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                <td className="px-5 py-3 font-medium">{svc.name}</td>
+                <td className="px-5 py-3 font-medium">
+                  {editingId === svc.id ? (
+                    <input
+                      required
+                      type="text"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      className="w-full rounded-xl border px-2 py-1 text-sm bg-white dark:bg-zinc-950 border-zinc-300 dark:border-zinc-700"
+                    />
+                  ) : (
+                    svc.name
+                  )}
+                </td>
                 <td className="px-5 py-3 text-zinc-500">
                   {editingId === svc.id ? (
                     <input 
@@ -127,6 +153,19 @@ export function ServicesList({ tenantId, initialServices }: { tenantId: string, 
                     `R$ ${svc.basePrice.toFixed(2)}`
                   )}
                 </td>
+                <td className="px-5 py-3">
+                  {editingId === svc.id ? (
+                    <input
+                      type="number"
+                      step="1"
+                      value={editOrder}
+                      onChange={e => setEditOrder(Number(e.target.value))}
+                      className="w-20 rounded border px-2 py-1 text-sm bg-white dark:bg-zinc-950 border-zinc-300 dark:border-zinc-700"
+                    />
+                  ) : (
+                    <span className="text-zinc-500">{svc.displayOrder ?? 0}</span>
+                  )}
+                </td>
                 <td className="px-5 py-3 text-right">
                   {editingId === svc.id ? (
                     <div className="flex justify-end gap-2">
@@ -135,15 +174,15 @@ export function ServicesList({ tenantId, initialServices }: { tenantId: string, 
                     </div>
                   ) : (
                     <div className="flex justify-end gap-3">
-                      <button onClick={() => { setEditingId(svc.id); setEditPrice(svc.basePrice); setEditDuration(svc.durationMinutes); }} className="text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100">Editar</button>
+                      <button onClick={() => { setEditingId(svc.id); setEditName(svc.name); setEditPrice(svc.basePrice); setEditDuration(svc.durationMinutes); setEditOrder(svc.displayOrder ?? 0); }} className="text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100">Editar</button>
                       <button onClick={() => handleDelete(svc.id, svc.name)} className="text-red-500 underline hover:text-red-700">Excluir</button>
                     </div>
                   )}
                 </td>
               </tr>
             ))}
-            {initialServices.length === 0 && (
-              <tr><td colSpan={4} className="px-5 py-4 text-center text-zinc-500">Nenhum serviço cadastrado.</td></tr>
+            {services.length === 0 && (
+              <tr><td colSpan={5} className="px-5 py-4 text-center text-zinc-500">Nenhum serviço cadastrado.</td></tr>
             )}
           </tbody>
         </table>

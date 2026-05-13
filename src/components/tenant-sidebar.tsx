@@ -16,14 +16,20 @@ export function TenantSidebar({
   userRole, 
   userEmail, 
   userName,
+  userAvatarUrl,
   tenantName,
-  tenantPlan
+  tenantPlan,
+  tenantLogoUrl,
+  canEditTenantLogo,
 }: { 
   userRole: string; 
   userEmail: string; 
   userName: string;
+  userAvatarUrl?: string | null;
   tenantName?: string;
   tenantPlan?: string;
+  tenantLogoUrl?: string | null;
+  canEditTenantLogo?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [zoom, setZoom] = useState(100);
@@ -90,8 +96,23 @@ export function TenantSidebar({
       <aside className={`fixed inset-y-0 left-0 z-[90] w-72 bg-white dark:bg-zinc-950 border-r border-zinc-100 dark:border-white/5 flex flex-col transition-transform duration-300 md:translate-x-0 md:static ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Branding Area */}
         <div className="h-20 flex items-center px-6 gap-3 border-b border-zinc-50 dark:border-white/5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-600/20">
-            <LayoutDashboard className="w-5 h-5 text-white" />
+          <div className="relative">
+            {tenantLogoUrl ? (
+              <img
+                src={tenantLogoUrl}
+                alt={tenantName || "Logo"}
+                className="w-12 h-12 rounded-2xl object-cover border border-zinc-200 dark:border-zinc-700"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-600/20">
+                <LayoutDashboard className="w-5 h-5 text-white" />
+              </div>
+            )}
+            {canEditTenantLogo && (
+              <Link href="/tenant/settings" className="absolute -right-2 -bottom-2 rounded-full bg-white border border-zinc-200 text-zinc-700 p-1 shadow-sm hover:bg-zinc-100 transition dark:bg-zinc-900 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="Editar logo do estabelecimento">
+                <Settings2 className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-bold text-zinc-900 dark:text-white leading-tight truncate max-w-[160px]">
@@ -161,9 +182,13 @@ export function TenantSidebar({
 
           {/* User Profile Section */}
           <div className="flex items-center gap-3 px-2 pt-6 border-t border-zinc-100 dark:border-white/5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 border border-zinc-200 dark:border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
-               <UserCircle2 className="w-6 h-6 text-zinc-400" />
-            </div>
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 flex items-center justify-center flex-shrink-0 shadow-sm bg-zinc-100 dark:bg-zinc-900">
+            {userAvatarUrl ? (
+              <img src={userAvatarUrl} alt={userName} className="w-full h-full object-cover" />
+            ) : (
+              <UserCircle2 className="w-6 h-6 text-zinc-400" />
+            )}
+          </div>
             
             <div className="flex flex-col min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">

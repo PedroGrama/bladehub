@@ -215,7 +215,6 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
                         className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
                       />
                       <span className="font-medium">{s.name}</span>
-                      <span className="text-xs text-zinc-500">{s.durationMinutes} min</span>
                     </div>
                     <span className="font-medium text-zinc-600 dark:text-zinc-400">R$ {s.basePrice.toFixed(2)}</span>
                   </label>
@@ -257,11 +256,6 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
         {/* Step 2: data / hora inteligente */}
         <div className="flex min-h-[420px] w-1/2 shrink-0 flex-col ps-4">
           <h3 className="mb-1 text-lg font-semibold">Quando quer ser atendido?</h3>
-          <p className="mb-4 text-xs text-zinc-500">
-            Só aparecem horários livres, dentro do expediente da barbearia e do profissional, sem conflitar com outros
-            agendamentos.
-          </p>
-
           <div className="flex-1 overflow-y-auto pr-1">
             <BookingSlotPicker
               tenantId={tenant.id}
@@ -270,6 +264,7 @@ export function BookingWizard({ tenant, services, barbers }: BookingWizardProps)
               valueDate={date}
               valueTime={time}
               onChange={handleSlotChange}
+              showDurationInfo={false}
             />
           </div>
 

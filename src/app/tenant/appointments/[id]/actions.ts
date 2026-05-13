@@ -9,13 +9,173 @@ export async function updateAppointmentStatus(id: string, status: any) {
   const user = await getSessionUser();
   if (!user || !user.tenantId) throw new Error("Acesso negado");
 
+  if (status === "in_progress") {
+    const appointment = await prisma.appointment.findFirst({
+      where: { id, tenantId: user.tenantId }
+    });
+
+    if (!appointment) {
+      throw new Error("Agendamento não encontrado.");
+    }
+
+    const existingOpen = await prisma.appointment.findFirst({
+      where: {
+        tenantId: user.tenantId,
+        barberId: appointment.barberId,
+        status: "in_progress",
+        id: { not: id }
+      }
+    });
+
+    if (existingOpen) {
+      throw new Error("Este profissional já possui um atendimento em andamento. Finalize o agendamento atual antes de iniciar outro.");
+    }
+  }
+
   await prisma.appointment.update({
-    where: { id, tenantId: user.tenantId },
+    where: { id },
     data: { status }
   });
   
   revalidatePath(`/tenant`);
   revalidatePath(`/tenant/appointments/${id}`);
+}
+
+export async function cancelAppointment(appointmentId: string, reason: string) {
+  const user = await getSessionUser();
+  if (!user || !user.tenantId) throw new Error("Acesso negado");
+  if (!reason || reason.trim().length < 7) throw new Error("Informe pelo menos 7 caracteres para justificar o cancelamento.");
+
+  const appt = await prisma.appointment.findFirst({ where: { id: appointmentId, tenantId: user.tenantId } });
+  if (!appt) throw new Error("Agendamento não encontrado.");
+
+  await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: "cancelled",
+        notes: reason.trim(),
+      }
+    });
+
+  revalidatePath(`/tenant`);
+  revalidatePath(`/tenant/appointments/${appointmentId}`);
+}
+
+export async function markNoShow(appointmentId: string, reason: string) {
+  const user = await getSessionUser();
+  if (!user || !user.tenantId) throw new Error("Acesso negado");
+  if (!reason || reason.trim().length < 7) throw new Error("Informe pelo menos 7 caracteres para justificar a falta.");
+
+  const appt = await prisma.appointment.findFirst({ where: { id: appointmentId, tenantId: user.tenantId } });
+  if (!appt) throw new Error("Agendamento não encontrado.");
+
+  await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: "no_show",
+        notes: reason.trim(),
+      }
+    });
+
+  revalidatePath(`/tenant`);
+  revalidatePath(`/tenant/appointments/${appointmentId}`);
+}
+
+export async function rescheduleAppointment(
+  appointmentId: string,
+  dateStr: string,
+  timeStr: string,
+  reason: string
+) {
+  const user = await getSessionUser();
+  if (!user || !user.tenantId) throw new Error("Acesso negado");
+  if (!reason || reason.trim().length < 7) throw new Error("Informe pelo menos 7 caracteres para justificar o reagendamento.");
+
+  const appt = await prisma.appointment.findFirst({
+    where: { id: appointmentId, tenantId: user.tenantId },
+    include: { items: true }
+  });
+
+  if (!appt) throw new Error("Agendamento não encontrado.");
+  if (appt.status === "cancelled" || appt.status === "done" || appt.status === "no_show") {
+    throw new Error("Não é possível reagendar este agendamento.");
+  }
+
+  const totalMinutes = appt.items.reduce((sum, item) => sum + item.durationMinutesSnapshot, 0);
+  const scheduledStart = new Date(`${dateStr}T${timeStr}:00`);
+  const scheduledEnd = new Date(scheduledStart.getTime() + totalMinutes * 60000);
+
+  if (!(scheduledStart instanceof Date) || isNaN(scheduledStart.getTime())) {
+    throw new Error("Data/hora inválida.");
+  }
+
+  const conflict = await prisma.appointment.findFirst({
+    where: {
+      tenantId: user.tenantId,
+      barberId: appt.barberId,
+      id: { not: appointmentId },
+      status: { not: "cancelled" },
+      scheduledStart: { lt: scheduledEnd },
+      scheduledEnd: { gt: scheduledStart }
+    }
+  });
+
+  if (conflict) {
+    throw new Error("Este horário conflita com outro agendamento.");
+  }
+
+  const weekday = scheduledStart.getDay();
+  const businessHour = await prisma.tenantBusinessHour.findFirst({
+    where: { tenantId: user.tenantId, weekday, isClosed: false }
+  });
+
+  if (businessHour) {
+    const [endH, endM] = businessHour.endTime.split(":").map(Number);
+    const limitDate = new Date(scheduledStart);
+    limitDate.setHours(endH, endM, 0, 0);
+    if (scheduledEnd > limitDate) {
+      throw new Error(`O serviço excede o horário de funcionamento (${businessHour.endTime}).`);
+    }
+  }
+
+  const barberHour = await prisma.barberBusinessHour.findFirst({
+    where: { tenantId: user.tenantId, barberId: appt.barberId, weekday, isClosed: false }
+  });
+
+  if (barberHour) {
+    const [endH, endM] = barberHour.endTime.split(":").map(Number);
+    const limitDate = new Date(scheduledStart);
+    limitDate.setHours(endH, endM, 0, 0);
+    if (scheduledEnd > limitDate) {
+      throw new Error(`O serviço excede o expediente do profissional (${barberHour.endTime}).`);
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        scheduledStart,
+        scheduledEnd,
+        notes: reason.trim(),
+      }
+    });
+
+    await tx.appointmentReschedule.create({
+      data: {
+        appointmentId,
+        oldStart: appt.scheduledStart,
+        oldEnd: appt.scheduledEnd,
+        newStart: scheduledStart,
+        newEnd: scheduledEnd,
+        reason: reason.trim(),
+        changedByUserId: user.id
+      }
+    });
+  });
+
+  revalidatePath(`/tenant`);
+  revalidatePath(`/tenant/appointments/${appointmentId}`);
 }
 
 export async function finalizeReview(appointmentId: string, items: any[], finalTotal: number) {
@@ -44,7 +204,7 @@ export async function finalizeReview(appointmentId: string, items: any[], finalT
     }
 
     await tx.appointment.update({
-      where: { id: appointmentId, tenantId: user.tenantId as string },
+      where: { id: appointmentId },
       data: {
         status: "awaiting_payment",
         pricingFinal: finalTotal

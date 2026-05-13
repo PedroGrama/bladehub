@@ -19,6 +19,15 @@ export function WalkinForm({ tenantId, services, barbers, currentUserId, isAdmin
   const [clientPhone, setClientPhone] = useState("");
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 11) value = value.slice(0, 11);
+    if (value.length === 11) value = value.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+    else if (value.length >= 10) value = value.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+    else if (value.length > 2) value = value.replace(/(\d{2})(\d+)/, "($1) $2");
+    setClientPhone(value);
+  };
+
   const toggleService = (id: string) => {
     const newSet = new Set(selectedServices);
     if (newSet.has(id)) newSet.delete(id);
@@ -35,6 +44,8 @@ export function WalkinForm({ tenantId, services, barbers, currentUserId, isAdmin
     if (selectedServices.size === 0) return setError("Selecione pelo menos 1 serviço.");
     if (!barberId) return setError("Selecione o barbeiro responsável.");
     if (!time) return setError("Preencha a hora de início.");
+    if (!clientPhone) return setError("Telefone é obrigatório para agendamentos manuais.");
+    if (!validarTelefone(clientPhone)) return setError("Telefone inválido. Use um telefone com DDD (ex: (11) 99999-9999).");
 
     setLoading(true);
     setError("");
@@ -43,7 +54,7 @@ export function WalkinForm({ tenantId, services, barbers, currentUserId, isAdmin
       await createWalkinAppointment({
         tenantId,
         clientName,
-        clientPhone,
+        clientPhone: clientPhone ? formatarTelefone(clientPhone) : "",
         dateStr: date,
         timeStr: time,
         barberId,
@@ -53,6 +64,7 @@ export function WalkinForm({ tenantId, services, barbers, currentUserId, isAdmin
       router.push("/tenant");
     } catch (err: any) {
       setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
@@ -67,8 +79,8 @@ export function WalkinForm({ tenantId, services, barbers, currentUserId, isAdmin
           <input required value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Obrigatório" className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Telefone (Opcional se for avulso)</label>
-          <input value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="(11) 99999-9999" className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
+          <label className="block text-sm font-medium mb-1">Telefone</label>
+          <input required value={clientPhone} onChange={handlePhoneChange} placeholder="(11) 99999-9999" className="w-full rounded-xl border px-3 py-2 text-sm dark:bg-zinc-950 dark:border-zinc-800" />
         </div>
         
         <div>

@@ -24,12 +24,19 @@ export async function addService(data: { name: string, basePrice: number, durati
     }
   }
 
+  const aggregate = await prisma.service.aggregate({
+    where: { tenantId: admin.tenantId! },
+    _max: { displayOrder: true }
+  });
+  const nextOrder = (aggregate._max.displayOrder ?? 0) + 1;
+
   await prisma.service.create({
     data: {
       tenantId: admin.tenantId!,
       name: data.name,
       basePrice: data.basePrice,
       durationMinutes: data.durationMinutes,
+      displayOrder: nextOrder,
       isActive: true,
     }
   });
@@ -37,13 +44,29 @@ export async function addService(data: { name: string, basePrice: number, durati
   revalidatePath("/tenant/services");
 }
 
-export async function updateService(serviceId: string, newPrice: number, newDuration: number) {
+export async function updateService(serviceId: string, name: string, newPrice: number, newDuration: number, displayOrder?: number) {
   const admin = await verifyAdminAccess();
   
-  // Confirma se o serviço pertence ao tenant
+  const data: any = {
+    name,
+    basePrice: newPrice,
+    durationMinutes: newDuration,
+  };
+  if (typeof displayOrder === "number") {
+    data.displayOrder = displayOrder;
+  }
+
+  const service = await prisma.service.findFirst({
+    where: { id: serviceId, tenantId: admin.tenantId! }
+  });
+
+  if (!service) {
+    throw new Error("Serviço não encontrado para este estabelecimento.");
+  }
+
   await prisma.service.update({
-    where: { id: serviceId, tenantId: admin.tenantId! },
-    data: { basePrice: newPrice, durationMinutes: newDuration }
+    where: { id: serviceId },
+    data
   });
   
   revalidatePath("/tenant/services");
@@ -52,9 +75,16 @@ export async function updateService(serviceId: string, newPrice: number, newDura
 export async function deleteService(serviceId: string) {
   const admin = await verifyAdminAccess();
   
+  const service = await prisma.service.findFirst({
+    where: { id: serviceId, tenantId: admin.tenantId! }
+  });
+  if (!service) {
+    throw new Error("Serviço não encontrado para este estabelecimento.");
+  }
+
   // Para evitar quebrar históricos de agendamentos, usamos soft delete inativando o serviço.
   await prisma.service.update({
-    where: { id: serviceId, tenantId: admin.tenantId! },
+    where: { id: serviceId },
     data: { isActive: false }
   });
   

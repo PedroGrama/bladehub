@@ -2,6 +2,7 @@
 
 import { prisma } from "@/server/db";
 import { getSessionUser } from "@/server/auth";
+import { validarTelefone, formatarTelefone } from "@/lib/validations";
 
 export async function createWalkinAppointment(data: {
   tenantId: string,
@@ -56,15 +57,14 @@ export async function createWalkinAppointment(data: {
     throw new Error("Conflito de horário! Este barbeiro já tem um agendamento neste período.");
   }
 
-  // Achar ou criar client fake se não tiver telefone
-  let client;
-  if (clientPhone) {
-    client = await prisma.client.findFirst({ where: { tenantId, phone: clientPhone } });
-    if (!client) {
-      client = await prisma.client.create({ data: { tenantId, name: clientName, phone: clientPhone } });
-    }
-  } else {
-    client = await prisma.client.create({ data: { tenantId, name: clientName, phone: `SEM_FONE_${Date.now()}` } });
+  if (!clientPhone || !validarTelefone(clientPhone)) {
+    throw new Error("Telefone inválido. Use um telefone com DDD (ex: (11) 99999-9999). ");
+  }
+
+  const formattedPhone = formatarTelefone(clientPhone);
+  let client = await prisma.client.findFirst({ where: { tenantId, phone: formattedPhone } });
+  if (!client) {
+    client = await prisma.client.create({ data: { tenantId, name: clientName, phone: formattedPhone } });
   }
 
   await prisma.$transaction(async (tx) => {

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import flatpickr from "flatpickr";
 import { Portuguese } from "flatpickr/dist/l10n/pt.js";
-import "flatpickr/dist/flatpickr.min.css";
 
 interface BrazilianDateInputProps {
   value: string; // YYYY-MM-DD format (internal)
@@ -23,20 +22,21 @@ export function BrazilianDateInput({
   className = "",
 }: BrazilianDateInputProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const todayValue = new Date().toLocaleDateString("pt-BR");
   const [displayValue, setDisplayValue] = useState(
-    value ? new Date(value + "T00:00:00").toLocaleDateString("pt-BR") : ""
+    value ? new Date(value + "T00:00:00").toLocaleDateString("pt-BR") : todayValue
   );
 
   useEffect(() => {
-    setDisplayValue(value ? new Date(value + "T00:00:00").toLocaleDateString("pt-BR") : "");
-  }, [value]);
+    setDisplayValue(value ? new Date(value + "T00:00:00").toLocaleDateString("pt-BR") : todayValue);
+  }, [value, todayValue]);
 
   useEffect(() => {
     if (!inputRef.current) return;
 
     const fp = flatpickr(inputRef.current, {
       dateFormat: "d/m/Y",
-      defaultDate: value || undefined,
+      defaultDate: value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : new Date(),
       locale: Portuguese,
       minDate: min || "today",
       maxDate: max || null,

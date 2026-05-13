@@ -5,32 +5,32 @@ import { AppointmentWorkflow } from "./AppointmentWorkflow";
 import { getStatusLabel } from "@/lib/labels";
 import { BackButton } from "@/components/BackButton";
 
-// Helper function to serialize Decimal values
+function serializeValue(value: any): any {
+  if (value === null || value === undefined) return value;
+
+  if (typeof value === "object") {
+    if (value instanceof Date) return value.toISOString();
+    if (value.constructor?.name?.startsWith?.("Decimal")) return value.toString();
+    if (Array.isArray(value)) return value.map(serializeValue);
+
+    return Object.fromEntries(
+      Object.entries(value).map(([key, val]) => [key, serializeValue(val)])
+    );
+  }
+
+  return value;
+}
+
 function serializeAppointmentData(data: any) {
-  return {
-    ...data,
-    scheduledStart: data.scheduledStart.toISOString(),
-    scheduledEnd: data.scheduledEnd.toISOString(),
-    pricingOriginal: data.pricingOriginal.toString(),
-    discountApplied: data.discountApplied.toString(),
-    pricingFinal: data.pricingFinal.toString(),
-    items: data.items.map((item: any) => ({
-      ...item,
-      unitPriceSnapshot: item.unitPriceSnapshot.toString(),
-    })),
-  };
+  return serializeValue(data);
 }
 
 function serializeService(service: any) {
-  return {
-    ...service,
-    basePrice: service.basePrice.toString(),
-  };
+  return serializeValue(service);
 }
 
 function serializePixKey(pixKey: any) {
-  if (!pixKey) return null;
-  return pixKey;
+  return serializeValue(pixKey);
 }
 
 export default async function AppointmentDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -38,7 +38,7 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
   const user = await getSessionUser();
   if (!user || !user.tenantId) redirect("/login");
 
-  const appointment = await prisma.appointment.findUnique({
+  const appointment = await prisma.appointment.findFirst({
     where: { id: resolvedParams.id, tenantId: user.tenantId },
     include: {
       client: true,
@@ -56,6 +56,21 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
     where: { tenantId: user.tenantId, isActive: true }
   });
 
+  // Próximos agendamentos do mesmo barbeiro
+  const upcomingAppointments = appointment.barberId
+    ? await prisma.appointment.findMany({
+        where: {
+          tenantId: user.tenantId,
+          barberId: appointment.barberId,
+          status: { not: "cancelled" },
+          scheduledStart: { gt: appointment.scheduledStart }
+        },
+        orderBy: { scheduledStart: "asc" },
+        take: 2,
+        include: { client: true }
+      })
+    : [];
+
   // Load Pix Key
   const pixKey = await prisma.pixKey.findFirst({
     where: { tenantId: user.tenantId, isActive: true }
@@ -70,6 +85,7 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
   const serializedAppointment = serializeAppointmentData(appointment);
   const serializedServices = services.map(serializeService);
   const serializedPixKey = serializePixKey(pixKey);
+  const serializedUpcomingAppointments = upcomingAppointments.map(serializeAppointmentData);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -82,8 +98,8 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
             <div className="space-y-3 text-sm">
               <div>
                 <span className="block text-zinc-500">Cliente</span>
-                <span className="font-medium">{appointment.client.name}</span>
-                <span className="block text-xs text-zinc-400">{appointment.client.phone}</span>
+                <span className="font-medium">{appointment.client?.name ?? "Cliente não disponível"}</span>
+                <span className="block text-xs text-zinc-400">{appointment.client?.phone ?? "Telefone não disponível"}</span>
               </div>
               <div>
                 <span className="block text-zinc-500">Data e Hora</span>
@@ -93,7 +109,7 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
               </div>
               <div>
                 <span className="block text-zinc-500">Barbeiro</span>
-                <span className="font-medium">{appointment.barber.name}</span>
+                <span className="font-medium">{appointment.barber?.name ?? "Não definido"}</span>
               </div>
               <div>
                 <span className="block text-zinc-500">Status</span>
@@ -112,6 +128,7 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
                pixKey={serializedPixKey}
                currentUserId={user.id}
                barbersList={barbers}
+               upcomingAppointments={serializedUpcomingAppointments}
              />
           </div>
         </div>

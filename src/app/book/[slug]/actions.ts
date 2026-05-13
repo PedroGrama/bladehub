@@ -70,8 +70,7 @@ export async function getAvailableBookingSlots(input: {
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const isToday = dateStr === todayStr;
     const nowMins = now.getHours() * 60 + now.getMinutes();
-    const buffer = SLOT_STEP_MINUTES;
-    const filterFloor = isToday ? nowMins + buffer : undefined;
+    const filterFloor = isToday ? nowMins : undefined;
 
     const slotSet = new Set<string>();
 

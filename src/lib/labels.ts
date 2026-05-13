@@ -6,11 +6,11 @@
 // Status de Agendamento
 export const appointmentStatusLabels: Record<string, string> = {
   confirmed: "Confirmado",
-  in_progress: "Em Andamento",
+  in_progress: "Em Atendimento",
   awaiting_payment: "Aguardando Pagamento",
   done: "Concluído",
   cancelled: "Cancelado",
-  no_show: "Não Compareceu",
+  no_show: "Ausente",
 };
 
 // Status de Tenant

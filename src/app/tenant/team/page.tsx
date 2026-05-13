@@ -17,6 +17,16 @@ export default async function TeamPage() {
     where: { id: user.tenantId! }
   });
 
+  if (!tenant) return <div className="p-6">Tenant não encontrado.</div>;
+
+  const serializedTenant = {
+    id: tenant.id,
+    name: tenant.name ?? "",
+    slug: tenant.slug ?? "",
+    logoUrl: tenant.logoUrl ?? null,
+    allowChooseBarber: Boolean(tenant.allowChooseBarber),
+  };
+
   const team = await prisma.user.findMany({
     where: { 
       tenantId: user.tenantId!, 
@@ -43,7 +53,7 @@ export default async function TeamPage() {
       <div className="flex flex-col gap-10">
         <section className="bg-blue-50/50 dark:bg-blue-500/5 border border-blue-200/50 dark:border-blue-500/20 rounded-[16px] p-8 shadow-sm">
           <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Configurações da Equipe</h2>
-          <TeamSettingsForm tenant={tenant} />
+          <TeamSettingsForm tenant={serializedTenant} />
         </section>
 
         <section className="space-y-6">

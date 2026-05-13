@@ -2,7 +2,6 @@
 
 import flatpickr from "flatpickr";
 import { Portuguese } from "flatpickr/dist/l10n/pt.js";
-import "flatpickr/dist/flatpickr.min.css";
 import { Clock, Calendar, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getAvailableBookingSlots } from "@/app/book/[slug]/actions";
@@ -16,6 +15,7 @@ type BookingSlotPickerProps = {
   valueDate: string;
   valueTime: string;
   onChange: (dateStr: string, timeStr: string) => void;
+  showDurationInfo?: boolean;
 };
 
 function splitTimes(times: string[]) {
@@ -36,6 +36,7 @@ export function BookingSlotPicker({
   valueDate,
   valueTime,
   onChange,
+  showDurationInfo = true,
 }: BookingSlotPickerProps) {
   const dateRef = useRef<HTMLInputElement>(null);
   const fpInstance = useRef<flatpickr.Instance | null>(null);
@@ -94,11 +95,16 @@ export function BookingSlotPicker({
     const maxDate = new Date();
     maxDate.setDate(maxDate.getDate() + 60);
 
+    const defaultDate = valueDate && /^\d{4}-\d{2}-\d{2}$/.test(valueDate)
+      ? new Date(valueDate)
+      : "today";
+
     const fp = flatpickr(dateRef.current, {
       locale: Portuguese,
       dateFormat: "d/m/Y",
       minDate: "today",
       maxDate,
+      defaultDate,
       allowInput: false,
       disableMobile: false,
       onChange: (_dates, dateStr) => {
@@ -109,10 +115,11 @@ export function BookingSlotPicker({
         }
       },
     });
-    fpInstance.current = Array.isArray(fp) ? fp[0] ?? null : fp;
+    const instance = Array.isArray(fp) ? fp[0] ?? null : fp;
+    fpInstance.current = instance;
 
     return () => {
-      fp.destroy();
+      instance?.destroy();
       fpInstance.current = null;
     };
   }, []);
@@ -133,18 +140,20 @@ export function BookingSlotPicker({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50/80 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800/40">
-        <Clock className="h-4 w-4 shrink-0 text-zinc-500" aria-hidden />
-        <span className="font-medium text-zinc-800 dark:text-zinc-200">
-          Duração total do atendimento
-        </span>
-        <span className="rounded-full bg-zinc-900 px-3 py-0.5 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
-          {durationMinutes} min
-        </span>
-        <span className="text-xs text-zinc-500">
-          (grade de {SLOT_STEP_MINUTES} min)
-        </span>
-      </div>
+      {showDurationInfo && (
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50/80 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800/40">
+          <Clock className="h-4 w-4 shrink-0 text-zinc-500" aria-hidden />
+          <span className="font-medium text-zinc-800 dark:text-zinc-200">
+            Duração total do atendimento
+          </span>
+          <span className="rounded-full bg-zinc-900 px-3 py-0.5 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+            {durationMinutes} min
+          </span>
+          <span className="text-xs text-zinc-500">
+            (grade de {SLOT_STEP_MINUTES} min)
+          </span>
+        </div>
+      )}
 
       <div>
         <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
