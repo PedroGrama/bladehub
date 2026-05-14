@@ -2,7 +2,7 @@ import { getSessionUser } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { notFound, redirect } from "next/navigation";
 import { AppointmentWorkflow } from "./AppointmentWorkflow";
-import { getStatusLabel } from "@/lib/labels";
+import { getAppointmentStatusLabel } from "@/lib/labels";
 import { BackButton } from "@/components/BackButton";
 import { getLoyaltyProgress } from "@/server/loyalty/getLoyaltyProgress";
 import { normalizePhoneDigits } from "@/lib/phoneDigits";
@@ -100,7 +100,13 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
         },
         orderBy: { scheduledStart: "asc" },
         take: 2,
-        include: { client: true }
+        select: {
+          id: true,
+          scheduledStart: true,
+          status: true,
+          clientConfirmedAt: true,
+          client: { select: { id: true, name: true } }
+        }
       })
     : [];
 
@@ -152,7 +158,9 @@ export default async function AppointmentDetailsPage({ params }: { params: Promi
               </div>
               <div>
                 <span className="block text-zinc-500">Status</span>
-                <span className="font-bold uppercase tracking-wider">{getStatusLabel(appointment.status, 'appointment')}</span>
+                <span className="font-bold uppercase tracking-wider">
+                  {getAppointmentStatusLabel(appointment.status, Boolean(appointment.clientConfirmedAt), appointment.scheduledStart)}
+                </span>
               </div>
             </div>
           </div>

@@ -80,6 +80,26 @@ export function getStatusLabel(
   return labelMaps[type][status] || status;
 }
 
+export function getAppointmentStatusLabel(
+  status: string,
+  checkedIn?: boolean,
+  scheduledStart?: string | Date
+): string {
+  if (status === "confirmed") {
+    const now = Date.now();
+    const start = scheduledStart ? new Date(scheduledStart).getTime() : undefined;
+    if (start && now > start) {
+      return "Atrasado";
+    }
+    if (!checkedIn) {
+      return "Agendado";
+    }
+    return "Confirmado";
+  }
+
+  return appointmentStatusLabels[status] || status;
+}
+
 // Cores para badges de status (Tailwind classes)
 export const statusColors: Record<string, string> = {
   // Agendamento

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import flatpickr from "flatpickr";
 import { Portuguese } from "flatpickr/dist/l10n/pt.js";
 
@@ -23,14 +23,8 @@ export function BrazilianDateInput({
 }: BrazilianDateInputProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const flatpickrRef = useRef<any>(null);
-  const todayValue = new Date().toLocaleDateString("pt-BR");
-  const [displayValue, setDisplayValue] = useState(
-    value ? new Date(value + "T00:00:00").toLocaleDateString("pt-BR") : todayValue
-  );
 
   useEffect(() => {
-    setDisplayValue(value ? new Date(value + "T00:00:00").toLocaleDateString("pt-BR") : todayValue);
-
     if (flatpickrRef.current) {
       if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
         flatpickrRef.current.setDate(value, false, "Y-m-d");
@@ -38,15 +32,15 @@ export function BrazilianDateInput({
         flatpickrRef.current.setDate(new Date(), false);
       }
     }
-  }, [value, todayValue]);
+  }, [value]);
 
   useEffect(() => {
     if (!inputRef.current) return;
 
     flatpickrRef.current = flatpickr(inputRef.current as any, {
+      locale: Portuguese,
       dateFormat: "d/m/Y",
       defaultDate: value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : new Date(),
-      locale: Portuguese,
       minDate: min || "today",
       maxDate: max || undefined,
       onChange(dates) {
@@ -55,29 +49,8 @@ export function BrazilianDateInput({
           onChange(iso);
         }
       },
-      onClose() {
-        if (inputRef.current) {
-          const raw = inputRef.current.value;
-          setDisplayValue(raw);
-
-          const match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-          if (match) {
-            const [_full, day, month, year] = match;
-            const isoCandidate = `${year}-${month}-${day}`;
-            const parsed = new Date(`${year}-${month}-${day}T00:00:00`);
-            if (
-              parsed instanceof Date &&
-              !Number.isNaN(parsed.getTime()) &&
-              parsed.getFullYear() === Number(year) &&
-              parsed.getMonth() + 1 === Number(month) &&
-              parsed.getDate() === Number(day)
-            ) {
-              onChange(isoCandidate);
-            }
-          }
-        }
-      },
-      allowInput: true,
+      allowInput: false,
+      disableMobile: false,
       altInput: false,
     });
 
@@ -92,11 +65,8 @@ export function BrazilianDateInput({
       ref={inputRef}
       type="text"
       placeholder="DD/MM/YYYY"
-      value={displayValue}
-      onChange={(e) => {
-        setDisplayValue(e.target.value);
-      }}
       required={required}
+      readOnly
       className={className}
     />
   );

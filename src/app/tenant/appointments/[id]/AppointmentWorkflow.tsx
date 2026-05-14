@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateAppointmentStatus, finalizeReview, registerPayment, repassAppointment, updateAppointmentBarber, validateAndAddService, cancelAppointment, markNoShow, rescheduleAppointment } from "./actions";
+import { getAppointmentStatusLabel } from "@/lib/labels";
 import { useToast } from "@/components/ToastProvider";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { 
@@ -62,11 +63,13 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
     setLoading(false);
   };
 
+  const isClientCheckedIn = Boolean(appointment.clientConfirmedAt);
   const currentTotal = selectedItems.reduce((acc, item) => acc + (Number(item?.unitPriceSnapshot || 0) * (item?.quantity || 1)), 0);
   const hasRewardRedeemable = loyaltyProgress?.rewardAvailable;
   const finalTotal = redeemReward && hasRewardRedeemable ? 0 : currentTotal;
   const appointmentStart = new Date(appointment.scheduledStart);
   const diffMinutes = Math.floor((Date.now() - appointmentStart.getTime()) / 60000);
+  const displayStatus = getAppointmentStatusLabel(status, isClientCheckedIn, appointmentStart);
   const isLate = appointment.status === "confirmed" && diffMinutes >= 15;
   const hasActiveSubscription = tenantPlan && tenantPlan !== "TESTE_GRATIS";
   const canReschedule = currentUserId === appointment.barberId && hasActiveSubscription;
@@ -372,7 +375,7 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
             key="progress"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`${cardBase}`}
+            className={`${cardBase} bg-zinc-950 text-white border border-zinc-900`}
           >
             <div className="flex flex-col items-center mb-8">
               <div className="relative w-20 h-20 mb-4">
@@ -382,8 +385,8 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
                   <Clock className="w-8 h-8 text-blue-500" />
                 </div>
               </div>
-              <h2 className="text-2xl font-black text-white">Atendimento Ativo</h2>
-              <p className="text-zinc-500 text-xs">O cronômetro está rodando.</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-blue-300 mb-2">Atendimento em andamento</p>
+              <h2 className="text-2xl font-black text-white">{appointment.client?.name || "Cliente"}</h2>
             </div>
 
             {hasUpcoming && (
@@ -399,7 +402,9 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
                         <p className="text-sm font-bold text-white">{item.client?.name || "Cliente"}</p>
                         <p className="text-[11px] text-zinc-400">{new Date(item.scheduledStart).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
-                      <span className="text-xs uppercase tracking-[0.2em] text-zinc-500">{item.status === 'confirmed' ? 'Agendado' : item.status}</span>
+                      <span className="text-xs uppercase tracking-[0.2em] text-zinc-300">
+                        {getAppointmentStatusLabel(item.status, Boolean(item.clientConfirmedAt), item.scheduledStart)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -499,12 +504,13 @@ export function AppointmentWorkflow({ appointment, tenantServices, pixKey, curre
             animate={{ opacity: 1, scale: 1 }}
             className={`${cardBase} text-center`}
           >
-            <div className="w-24 h-24 bg-blue-600/10 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-8 rotate-3 shadow-inner shadow-blue-500/5">
+            <div className="w-24 h-24 bg-blue-600/10 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-3 shadow-inner shadow-blue-500/5">
               <Scissors className="w-12 h-12" />
             </div>
-            <h2 className="text-4xl font-black text-white mb-3 tracking-tighter">Novo Cliente?</h2>
-            <p className="text-zinc-500 text-sm mb-10 max-w-[280px] mx-auto leading-relaxed">
-              O agendamento está confirmado. Clique para iniciar o cronômetro de atendimento.
+            <p className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-2">{displayStatus}</p>
+            <h2 className="text-4xl font-black text-zinc-900 dark:text-white mb-3 tracking-tighter">Atendimento de {appointment.client?.name || "Cliente"}</h2>
+            <p className="text-zinc-500 text-sm mb-10 max-w-[320px] mx-auto leading-relaxed">
+              O agendamento está confirmado. Clique para iniciar o atendimento.
             </p>
             
             <button 
