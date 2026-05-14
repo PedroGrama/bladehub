@@ -13,6 +13,7 @@ O objetivo central é digitalizar inteiramente as operações do estabelecimento
 - **Distribuição de Profissionais:** Modalidade onde a escolha de um barbeiro específico é travada pelo administrador da unidade, ou liberada redondamente para o cliente final.
 - **Fechamento e Pausa de Agenda:** Cada profissional tem controle e visualização da sua folha de serviço diária.
 - **Dashboard Financeiro Integrado.**
+- **Sistema de selos de fidelidade registrados via rede solana/web3.**
 
 ### Iniciar o Projeto
 ```bash
