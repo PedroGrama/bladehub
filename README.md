@@ -85,10 +85,7 @@ A plataforma centraliza toda a operação do estabelecimento em um único ecossi
 
 | Tecnologia | Uso no Projeto |
 |---|---|
-| NextAuth.js | Sistema de autenticação |
-| Google OAuth | Login social |
-| Nodemailer | Recuperação de senha e emails |
-| WhatsApp API | Notificações e automações |
+| NextAuth.js | Sistema de autenticação 
 
 ---
 
@@ -235,7 +232,6 @@ Ambiente reproduzível para desenvolvimento e deploy.
 ✅ Agendamento operacional  
 ✅ Fidelidade Web3 integrada  
 ✅ Integração Solana funcional  
-✅ Deploy cloud-ready  
 
 ---
 
