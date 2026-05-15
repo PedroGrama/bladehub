@@ -18,6 +18,7 @@ export async function runLoyaltySealForAppointment(appointmentId: string): Promi
       tenant: true,
       client: true,
       loyaltySeal: true,
+      barber: true,
     },
   });
 
@@ -58,6 +59,24 @@ export async function runLoyaltySealForAppointment(appointmentId: string): Promi
   });
 
   const network = process.env.SOLANA_NETWORK === "mainnet-beta" ? "mainnet-beta" : "devnet";
+
+  console.log("[LoyaltySeal] PRE-INSERT VERIFICATION:", {
+    appointmentId: appointment.id,
+    appointmentTenantId: appointment.tenantId,
+    resolvedTenantId: tenant.id,
+    professionalId: appointment.barber.id,
+    professionalTenantId: appointment.barber.tenantId,
+    clientPhone,
+    sealNumber,
+    txSignature
+  });
+
+  if (tenant.id !== appointment.barber.tenantId) {
+    console.error("[LoyaltySeal] MISMATCH: Appointment tenant differs from Professional tenant!", {
+      appointmentTenantId: tenant.id,
+      professionalTenantId: appointment.barber.tenantId,
+    });
+  }
 
   await prisma.$transaction([
     prisma.loyaltySeal.create({
