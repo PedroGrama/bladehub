@@ -2,8 +2,6 @@
 
 import { prisma } from "@/server/db";
 import bcrypt from "bcryptjs";
-import { randomUUID } from "crypto";
-import { sendVerificationEmail } from "@/lib/mailer";
 
 export async function registerUser(data: {
   name: string;
@@ -62,10 +60,8 @@ export async function registerUser(data: {
     const passwordHash = await bcrypt.hash(data.password, 10);
 
     // Criar tudo em transação para atomicidade
-    const token = randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const [tenant, user, emailToken] = await prisma.$transaction(async (tx) => {
+    const [tenant, user] = await prisma.$transaction(async (tx) => {
       const createdTenant = await tx.tenant.create({
         data: {
           name: data.tenantName!,
@@ -82,41 +78,21 @@ export async function registerUser(data: {
           passwordHash,
           role: "tenant_admin",
           tenantId: createdTenant.id,
-          isActive: false,
+          isActive: true,
+          emailVerifiedAt: new Date(),
           isBarber: false,
         },
       });
 
-      const createdToken = await tx.emailVerificationToken.create({
-        data: {
-          email: createdUser.email,
-          token,
-          expiresAt,
-        },
-      });
-
-      return [createdTenant, createdUser, createdToken];
+      return [createdTenant, createdUser];
     });
 
-    console.log("registerUser: cadastro transacional concluído", { tenantId: tenant.id, userId: user.id, tokenId: emailToken.id });
-
-    // Enviar email de confirmação (sem bloquear o fluxo em caso de erro)
-    try {
-      console.log("registerUser: enviando email de confirmação para", emailLower);
-      await sendVerificationEmail(emailLower, token);
-      console.log("registerUser: email de confirmação enviado com sucesso!");
-    } catch (emailError: any) {
-      console.error("registerUser: falha ao enviar email de confirmação", {
-        message: emailError?.message,
-        email: emailLower
-      });
-      // Não retorna erro para o usuário aqui, pois o registro no banco foi um sucesso
-    }
+    console.log("registerUser: cadastro transacional concluído", { tenantId: tenant.id, userId: user.id });
 
     return {
       success: true,
-      message: "Cadastro criado. Verifique seu email para ativar a conta.",
-      redirectUrl: "/login?success=email-enviado",
+      message: "Cadastro criado com sucesso.",
+      redirectUrl: "/login?success=created",
     };
   } catch (error: any) {
     console.error("Registration error:", error);
