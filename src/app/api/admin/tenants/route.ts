@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/server/db";
 import { getSessionUser } from "@/server/auth";
 import { ERROR_MESSAGES } from "@/lib/errorMessages";
+import { getNextTenantId } from "@/lib/tenantUtils";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -45,8 +46,10 @@ export async function POST(req: Request) {
 
   const slug = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
+  const newId = await getNextTenantId();
+
   const tenant = await prisma.tenant.create({
-    data: { name, slug, isActive: true },
+    data: { id: newId, name, slug, isActive: true },
   });
 
   const passwordHash = await bcrypt.hash(password, 10);

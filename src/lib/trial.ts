@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db";
+import { getNextTenantId } from "@/lib/tenantUtils";
 
 /**
  * Verifica se o acesso ao tenant deve ser bloqueado por trial expirado
@@ -100,9 +101,11 @@ export async function createTenantWithTrial(tenantData: {
 }) {
   const now = new Date();
   const trialEndsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 dias depois
+  const newId = await getNextTenantId();
 
   return prisma.tenant.create({
     data: {
+      id: newId,
       name: tenantData.name,
       email: tenantData.email,
       phone: tenantData.phone,
