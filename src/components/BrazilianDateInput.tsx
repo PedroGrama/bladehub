@@ -27,7 +27,7 @@ export function BrazilianDateInput({
   useEffect(() => {
     if (flatpickrRef.current) {
       if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        flatpickrRef.current.setDate(value, false, "Y-m-d");
+        flatpickrRef.current.setDate(new Date(`${value}T12:00:00`), false);
       } else {
         flatpickrRef.current.setDate(new Date(), false);
       }
@@ -40,7 +40,7 @@ export function BrazilianDateInput({
     flatpickrRef.current = flatpickr(inputRef.current as any, {
       locale: Portuguese,
       dateFormat: "d/m/Y",
-      defaultDate: value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : new Date(),
+      defaultDate: value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date(),
       minDate: min || "today",
       maxDate: max || undefined,
       onChange(dates) {
