@@ -1,6 +1,6 @@
 # BladeHub SaaS
 
-BladeHub é uma plataforma SaaS voltada para barbearias, salões e profissionais autônomos, focada na automação inteligente de agendamentos, fidelização de clientes e integração Web3 via blockchain Solana.
+BladeHub é uma plataforma SaaS voltada para barbearias, salões e profissionais autônomos, focada na automação inteligente de agendamentos, selos de fidelização com integração Web3 via blockchain Solana.
 
 ---
 
